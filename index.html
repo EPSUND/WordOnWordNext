@@ -168,10 +168,11 @@ kbd{background:#31463c;border:1px solid #46604f;border-radius:4px;padding:0 5px;
 .hstable td:last-child,.hstable th:last-child{text-align:right}
 .hstable tr.me td{color:var(--ring);font-weight:600}
 .hserror{color:var(--lingon);font-size:13px;margin-top:8px;line-height:1.4;font-weight:600}
-input[type=text]{
+input[type=text],input[type=date]{
   font:inherit;background:#182620;color:var(--text);
   border:1px solid #3d5a4d;border-radius:8px;padding:8px 10px;width:100%;
 }
+input[type=date]{color-scheme:dark}
 .final{display:flex;gap:18px;margin:8px 0 14px}
 .final div b{display:block;font-family:Georgia,serif;font-size:30px;color:var(--tile1)}
 .final div{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
@@ -206,6 +207,7 @@ input[type=text]{
         <div class="statrow"><span>Antal ord</span><b id="numwords">0</b></div>
         <div class="statrow"><span>Brickor kvar</span><b id="blocksleft">–</b></div>
         <div class="statrow"><span>Språk</span><b id="langlabel">Svenska</b></div>
+        <div class="statrow"><span>Läge</span><b id="modelabel">Slumpmässigt</b></div>
       </div>
     </div>
     <div class="card">
@@ -239,6 +241,12 @@ input[type=text]{
       <button id="langsv" class="sel">Svenska</button>
       <button id="langen">Engelska</button>
     </div>
+    <h2 style="font-family:system-ui;font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-top:14px">Spelläge</h2>
+    <div class="langrow">
+      <button id="moderandom" class="sel">Slumpmässigt</button>
+      <button id="modedaily">Dagens brickor</button>
+    </div>
+    <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">Dagens brickor är samma för alla som spelar samma dag – tävla på lika villkor.</p>
     <div class="btnrow" style="margin-top:18px">
       <button class="primary" style="flex:1" id="startbtn">Starta spelet</button>
       <button id="starthsbtn">🏆 Topplista</button>
@@ -273,7 +281,7 @@ input[type=text]{
       <div class="hserror" id="hserror" style="display:none"></div>
     </div>
     <div id="hslistwrap">
-      <h2 style="font-family:system-ui;font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-top:14px">Topplista</h2>
+      <h2 id="endhslabel" style="font-family:system-ui;font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-top:14px">Topplista</h2>
       <table class="hstable" id="hstable"></table>
     </div>
     <div class="btnrow" style="margin-top:16px">
@@ -289,6 +297,13 @@ input[type=text]{
     <div class="langrow">
       <button id="hsviewsv" class="sel">Svenska</button>
       <button id="hsviewen">Engelska</button>
+    </div>
+    <div class="langrow" style="margin-top:8px">
+      <button id="hsmodeall" class="sel">Alla</button>
+      <button id="hsmodedaily">Dagligt</button>
+    </div>
+    <div id="hsdaterow" style="display:none;margin-top:10px">
+      <input type="date" id="hsdate">
     </div>
     <table class="hstable" id="hstable-view"></table>
     <div class="btnrow" style="margin-top:16px">
@@ -347,6 +362,34 @@ let jokerUsed = false;              // jokern kan användas när som helst, men 
 let startHand = [];                // de 5 startbrickorna: {letter, r, c} – r/c null tills placerad
 let selHand = -1;                  // vald bricka i handen under arrangeringen
 let score = 0, numWords = 0, listedWords = [], bestWord = "";
+let gameMode = "random";           // "random" | "daily"
+let dailyDate = null;              // datumsträng (YYYY-MM-DD) för dagens spel, annars null
+
+/* ---------- Slumpgenerator ----------
+   Vanligt spel använder Math.random. Dagligt spel använder en deterministisk
+   generator seedad på datumet, så alla spelare får samma brickor samma dag. */
+let rng = Math.random;
+function todayStr(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate());
+}
+function hashSeed(str){
+  let h = 1779033703 ^ str.length;
+  for(let i=0;i<str.length;i++){
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return h >>> 0;
+}
+function mulberry32(a){
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 const boardEl = document.getElementById("board");
 const dropEl  = document.getElementById("dropzone");
@@ -394,7 +437,7 @@ function thud(){
 /* ---------- Bokstavspåse ---------- */
 function sampleLetter(){
   const table = FREQ[lang];
-  let r = Math.random(), acc = 0;
+  let r = rng(), acc = 0;
   for(const [c,p] of Object.entries(table)){
     acc += p;
     if(r < acc) return c;
@@ -559,6 +602,7 @@ function updatePanel(){
   document.getElementById("blocksleft").textContent = Math.max(0,left);
   document.getElementById("nexttile").textContent = phase==="arrange" ? "–" : (nextLetter || "–");
   document.getElementById("langlabel").textContent = lang==="sv"?"Svenska":"Engelska";
+  document.getElementById("modelabel").textContent = gameMode==="daily" ? ("Dagligt " + (dailyDate||"")) : "Slumpmässigt";
 
   const jb = document.getElementById("jokerbtn");
   if(jb){
@@ -709,7 +753,15 @@ function startGame(){
   grid = Array.from({length:ROWS},()=>new Array(COLS).fill(null));
   rowWords = Array.from({length:ROWS},()=>[]);
   colWords = Array.from({length:COLS},()=>[]);
+  if(gameMode==="daily"){                   // deterministiska brickor – samma för alla samma dag
+    dailyDate = todayStr();
+    rng = mulberry32(hashSeed("wow-daily-" + dailyDate));
+  } else {
+    dailyDate = null;
+    rng = Math.random;
+  }
   bag = makeBag();
+  rng = Math.random;                        // återställ efter att påsen skapats
   score = 0; numWords = 0; listedWords = []; bestWord = "";
   currentLetter = null; nextLetter = null; currentCol = 3;
   isJokerTile = false; jokerUsed = false; jokerPos = null; singleWords = [];
@@ -864,17 +916,22 @@ const SUPA_HEADERS = {
   Authorization: "Bearer " + SUPA_KEY,
   "Content-Type": "application/json"
 };
-async function loadScores(){                      // hämtar den globala listan; kastar fel om Supabase inte kan nås
+const HS_SELECT = "select=name,score,words:word_count,lang:language,bestWord:best_word,daily:daily_game_date";
+async function fetchScores(params){               // gemensam hämtare; kastar fel om Supabase inte kan nås
   let r;
   try{
-    r = await fetch(
-      `${SUPA_URL}/rest/v1/${SUPA_TABLE}?select=name,score,words:word_count,lang:language,bestWord:best_word&order=score.desc&limit=200`,
-      { headers: SUPA_HEADERS });
+    r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}?${HS_SELECT}&${params}`, { headers: SUPA_HEADERS });
   }catch(e){
     throw new Error("Kunde inte nå topplistan (nätverksfel).");
   }
   if(!r.ok) throw new Error("Topplistan svarade med fel (" + r.status + ").");
   return await r.json();
+}
+async function loadScores(){                      // all-time-listan (båda lägena)
+  return fetchScores("order=score.desc&limit=200");
+}
+async function loadDailyScores(dateStr, useLang){ // en specifik dags dagliga spel, ett språk
+  return fetchScores(`daily_game_date=eq.${encodeURIComponent(dateStr)}&language=eq.${encodeURIComponent(useLang)}&order=score.desc&limit=200`);
 }
 async function submitScore(entry){                // lägger till EN poäng; kastar fel om det misslyckas
   let r;
@@ -882,7 +939,9 @@ async function submitScore(entry){                // lägger till EN poäng; kas
     r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}`, {
       method: "POST",
       headers: { ...SUPA_HEADERS, Prefer: "return=minimal" },
-      body: JSON.stringify({ name:entry.name, score:entry.score, word_count:entry.words, language:entry.lang, best_word:entry.bestWord || null })
+      body: JSON.stringify({ name:entry.name, score:entry.score, word_count:entry.words,
+                             language:entry.lang, best_word:entry.bestWord || null,
+                             daily_game_date:entry.daily || null })
     });
   }catch(e){
     throw new Error("Kunde inte spara poängen (nätverksfel).");
@@ -893,8 +952,8 @@ const HS_HEAD = "<tr><th>#</th><th>Namn</th><th>Ord</th><th>Bästa ord</th><th>P
 function hsErrorRow(tbl, msg){
   tbl.innerHTML = HS_HEAD + `<tr><td colspan=5 style='color:var(--lingon)'>${msg}</td></tr>`;
 }
-function fillHighscoreTable(tbl, list, useLang, highlightIdx){
-  list = list.filter(e=>e.lang===useLang).sort((a,b)=>b.score-a.score).slice(0,10);
+function fillHighscoreTable(tbl, list, highlightIdx){   // list ska redan vara filtrerad
+  list = [...list].sort((a,b)=>b.score-a.score).slice(0,10);
   tbl.innerHTML = HS_HEAD +
     (list.length ? "" : "<tr><td colspan=5 style='color:var(--muted)'>Inga resultat ännu.</td></tr>");
   list.forEach((e,i)=>{
@@ -904,37 +963,55 @@ function fillHighscoreTable(tbl, list, useLang, highlightIdx){
     tbl.appendChild(tr);
   });
 }
+async function loadScoresForMode(){               // rätt lista för det spelade läget
+  if(gameMode==="daily") return loadDailyScores(dailyDate, lang);
+  return (await loadScores()).filter(e=>e.lang===lang);
+}
 async function renderHighscores(highlightIdx, preloaded){   // topplistan i slutdialogen
   const tbl = document.getElementById("hstable");
+  document.getElementById("endhslabel").textContent =
+    gameMode==="daily" ? ("Dagens topplista – " + dailyDate) : "Topplista";
   let list;
-  try{ list = preloaded || await loadScores(); }
+  try{ list = preloaded || await loadScoresForMode(); }
   catch(err){ hsErrorRow(tbl, err.message); return; }
-  fillHighscoreTable(tbl, list, lang, highlightIdx);
+  fillHighscoreTable(tbl, list, highlightIdx);
 }
-/* Fristående topplista från toppmenyn – egen språkväxling (påverkar inte spelet) */
+/* ---- Fristående topplista från toppmenyn (påverkar inte spelet) ---- */
 let viewLang = "sv";
-let hsViewList = null;                          // hämtas en gång per öppning, filtreras om vid språkbyte
-function updateHsViewLangButtons(){
+let viewMode = "all";                           // "all" | "daily"
+let viewDate = "";
+let hsViewReq = 0;                              // race-skydd vid snabb växling
+function updateHsViewButtons(){
   document.getElementById("hsviewsv").classList.toggle("sel", viewLang==="sv");
   document.getElementById("hsviewen").classList.toggle("sel", viewLang==="en");
+  document.getElementById("hsmodeall").classList.toggle("sel", viewMode==="all");
+  document.getElementById("hsmodedaily").classList.toggle("sel", viewMode==="daily");
+  document.getElementById("hsdaterow").style.display = viewMode==="daily" ? "" : "none";
 }
-function renderHsView(){
-  if(!hsViewList) return;                        // hämtning misslyckades – felraden visas redan
-  fillHighscoreTable(document.getElementById("hstable-view"), hsViewList, viewLang);
-}
-function setHsViewLang(l){
-  viewLang = l;
-  updateHsViewLangButtons();
-  renderHsView();
-}
-async function openHsView(){
-  viewLang = lang;                              // visa aktuellt språk först
-  updateHsViewLangButtons();
-  document.getElementById("hsoverlay").style.display = "flex";
+async function renderHsView(){
   const tbl = document.getElementById("hstable-view");
+  const my = ++hsViewReq;
+  updateHsViewButtons();
   tbl.innerHTML = HS_HEAD + "<tr><td colspan=5 style='color:var(--muted)'>Laddar…</td></tr>";
-  try{ hsViewList = await loadScores(); }
-  catch(err){ hsViewList = null; hsErrorRow(tbl, err.message); return; }
+  let list;
+  try{
+    if(viewMode==="daily"){
+      if(!viewDate){ if(my===hsViewReq) tbl.innerHTML = HS_HEAD + "<tr><td colspan=5 style='color:var(--muted)'>Välj ett datum.</td></tr>"; return; }
+      list = await loadDailyScores(viewDate, viewLang);
+    } else {
+      list = (await loadScores()).filter(e=>e.lang===viewLang);
+    }
+  }catch(err){ if(my===hsViewReq) hsErrorRow(tbl, err.message); return; }
+  if(my!==hsViewReq) return;                     // en nyare förfrågan har startat
+  fillHighscoreTable(tbl, list);
+}
+function openHsView(){
+  viewLang = lang;
+  viewMode = (gameMode==="daily") ? "daily" : "all";
+  viewDate = dailyDate || todayStr();
+  document.getElementById("hsdate").value = viewDate;
+  document.getElementById("hsdate").max = todayStr();
+  document.getElementById("hsoverlay").style.display = "flex";
   renderHsView();
 }
 function endGame(){
@@ -958,7 +1035,8 @@ document.getElementById("hssave").onclick = async ()=>{
   btn.disabled = true;
   err.style.display = "none";
   try{
-    await submitScore({ name, score, words:numWords, lang, bestWord });
+    await submitScore({ name, score, words:numWords, lang, bestWord,
+                        daily: gameMode==="daily" ? dailyDate : null });
   }catch(ex){                                       // sparandet misslyckades – dölj inte felet
     err.textContent = ex.message + " Försök igen.";
     err.style.display = "";
@@ -967,8 +1045,8 @@ document.getElementById("hssave").onclick = async ()=>{
   }
   document.getElementById("hsentry").style.display = "none";
   try{
-    const list = await loadScores();                // hämta om globala listan med den nya poängen
-    const sorted = list.filter(e=>e.lang===lang).sort((a,b)=>b.score-a.score);
+    const list = await loadScoresForMode();         // rätt lista för läget (språk-/datumfiltrerad)
+    const sorted = [...list].sort((a,b)=>b.score-a.score);
     const idx = sorted.findIndex(e=>e.score===score && e.name===name);
     renderHighscores(idx>=0 && idx<10 ? idx : undefined, list);
   }catch(ex){
@@ -1026,8 +1104,20 @@ document.getElementById("langen").onclick = ()=>{
   document.getElementById("langen").classList.add("sel");
   document.getElementById("langsv").classList.remove("sel");
 };
+let startMode = "random";                        // valt läge i startdialogen
+document.getElementById("moderandom").onclick = ()=>{
+  startMode = "random";
+  document.getElementById("moderandom").classList.add("sel");
+  document.getElementById("modedaily").classList.remove("sel");
+};
+document.getElementById("modedaily").onclick = ()=>{
+  startMode = "daily";
+  document.getElementById("modedaily").classList.add("sel");
+  document.getElementById("moderandom").classList.remove("sel");
+};
 document.getElementById("startbtn").onclick = ()=>{
   document.getElementById("startoverlay").style.display = "none";
+  gameMode = startMode;
   startGame();
 };
 document.getElementById("newbtn").onclick = ()=>{
@@ -1048,8 +1138,15 @@ document.getElementById("arrangebtn").onclick = ()=> finishArrange();
 document.getElementById("hsbtn").onclick = openHsView;
 document.getElementById("starthsbtn").onclick = openHsView;
 document.getElementById("hsclose").onclick = ()=>{ document.getElementById("hsoverlay").style.display = "none"; };
-document.getElementById("hsviewsv").onclick = ()=> setHsViewLang("sv");
-document.getElementById("hsviewen").onclick = ()=> setHsViewLang("en");
+document.getElementById("hsviewsv").onclick = ()=>{ viewLang = "sv"; renderHsView(); };
+document.getElementById("hsviewen").onclick = ()=>{ viewLang = "en"; renderHsView(); };
+document.getElementById("hsmodeall").onclick = ()=>{ viewMode = "all"; renderHsView(); };
+document.getElementById("hsmodedaily").onclick = ()=>{
+  viewMode = "daily";
+  if(!viewDate){ viewDate = todayStr(); document.getElementById("hsdate").value = viewDate; }
+  renderHsView();
+};
+document.getElementById("hsdate").onchange = e=>{ viewDate = e.target.value; renderHsView(); };
 window.addEventListener("resize", ()=>{
   if(phase==="arrange"){
     buildCellHits();
