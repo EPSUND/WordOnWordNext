@@ -187,6 +187,7 @@ input[type=text]{
   <h1>ORD <span class="pa">på</span> ORD</h1>
   <div class="header-btns">
     <button id="soundbtn" title="Ljud av/på">🔊</button>
+    <button id="hsbtn">🏆 Topplista</button>
     <button id="newbtn">Nytt spel</button>
   </div>
 </header>
@@ -240,6 +241,7 @@ input[type=text]{
     </div>
     <div class="btnrow" style="margin-top:18px">
       <button class="primary" style="flex:1" id="startbtn">Starta spelet</button>
+      <button id="starthsbtn">🏆 Topplista</button>
     </div>
   </div>
 </div>
@@ -276,6 +278,21 @@ input[type=text]{
     </div>
     <div class="btnrow" style="margin-top:16px">
       <button class="primary" style="flex:1" id="againbtn">Spela igen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Topplista-dialog (öppnas från toppmenyn/startdialogen) -->
+<div class="overlay" id="hsoverlay" style="display:none">
+  <div class="dialog">
+    <h2>Topplista</h2>
+    <div class="langrow">
+      <button id="hsviewsv" class="sel">Svenska</button>
+      <button id="hsviewen">Engelska</button>
+    </div>
+    <table class="hstable" id="hstable-view"></table>
+    <div class="btnrow" style="margin-top:16px">
+      <button class="primary" style="flex:1" id="hsclose">Stäng</button>
     </div>
   </div>
 </div>
@@ -872,19 +889,13 @@ async function submitScore(entry){                // lägger till EN poäng; kas
   }
   if(!r.ok) throw new Error("Poängen kunde inte sparas (" + r.status + ").");
 }
-async function renderHighscores(highlightIdx, preloaded){
-  const tbl = document.getElementById("hstable");
-  const head = "<tr><th>#</th><th>Namn</th><th>Ord</th><th>Bästa ord</th><th>Poäng</th></tr>";
-  let list;
-  try{
-    list = preloaded || await loadScores();
-  }catch(err){
-    tbl.innerHTML = head +
-      `<tr><td colspan=5 style='color:var(--lingon)'>${err.message}</td></tr>`;
-    return;
-  }
-  list = list.filter(e=>e.lang===lang).sort((a,b)=>b.score-a.score).slice(0,10);
-  tbl.innerHTML = head +
+const HS_HEAD = "<tr><th>#</th><th>Namn</th><th>Ord</th><th>Bästa ord</th><th>Poäng</th></tr>";
+function hsErrorRow(tbl, msg){
+  tbl.innerHTML = HS_HEAD + `<tr><td colspan=5 style='color:var(--lingon)'>${msg}</td></tr>`;
+}
+function fillHighscoreTable(tbl, list, useLang, highlightIdx){
+  list = list.filter(e=>e.lang===useLang).sort((a,b)=>b.score-a.score).slice(0,10);
+  tbl.innerHTML = HS_HEAD +
     (list.length ? "" : "<tr><td colspan=5 style='color:var(--muted)'>Inga resultat ännu.</td></tr>");
   list.forEach((e,i)=>{
     const tr = document.createElement("tr");
@@ -892,6 +903,39 @@ async function renderHighscores(highlightIdx, preloaded){
     tr.innerHTML = `<td>${i+1}</td><td>${(e.name||"").replace(/[<>&]/g,"")}</td><td>${e.words}</td><td>${(e.bestWord||"–").replace(/[<>&]/g,"")}</td><td>${e.score}</td>`;
     tbl.appendChild(tr);
   });
+}
+async function renderHighscores(highlightIdx, preloaded){   // topplistan i slutdialogen
+  const tbl = document.getElementById("hstable");
+  let list;
+  try{ list = preloaded || await loadScores(); }
+  catch(err){ hsErrorRow(tbl, err.message); return; }
+  fillHighscoreTable(tbl, list, lang, highlightIdx);
+}
+/* Fristående topplista från toppmenyn – egen språkväxling (påverkar inte spelet) */
+let viewLang = "sv";
+let hsViewList = null;                          // hämtas en gång per öppning, filtreras om vid språkbyte
+function updateHsViewLangButtons(){
+  document.getElementById("hsviewsv").classList.toggle("sel", viewLang==="sv");
+  document.getElementById("hsviewen").classList.toggle("sel", viewLang==="en");
+}
+function renderHsView(){
+  if(!hsViewList) return;                        // hämtning misslyckades – felraden visas redan
+  fillHighscoreTable(document.getElementById("hstable-view"), hsViewList, viewLang);
+}
+function setHsViewLang(l){
+  viewLang = l;
+  updateHsViewLangButtons();
+  renderHsView();
+}
+async function openHsView(){
+  viewLang = lang;                              // visa aktuellt språk först
+  updateHsViewLangButtons();
+  document.getElementById("hsoverlay").style.display = "flex";
+  const tbl = document.getElementById("hstable-view");
+  tbl.innerHTML = HS_HEAD + "<tr><td colspan=5 style='color:var(--muted)'>Laddar…</td></tr>";
+  try{ hsViewList = await loadScores(); }
+  catch(err){ hsViewList = null; hsErrorRow(tbl, err.message); return; }
+  renderHsView();
 }
 function endGame(){
   phase = "over";
@@ -1001,6 +1045,11 @@ document.getElementById("soundbtn").onclick = e=>{
 };
 document.getElementById("jokerbtn").onclick = ()=> useJoker();
 document.getElementById("arrangebtn").onclick = ()=> finishArrange();
+document.getElementById("hsbtn").onclick = openHsView;
+document.getElementById("starthsbtn").onclick = openHsView;
+document.getElementById("hsclose").onclick = ()=>{ document.getElementById("hsoverlay").style.display = "none"; };
+document.getElementById("hsviewsv").onclick = ()=> setHsViewLang("sv");
+document.getElementById("hsviewen").onclick = ()=> setHsViewLang("en");
 window.addEventListener("resize", ()=>{
   if(phase==="arrange"){
     buildCellHits();
