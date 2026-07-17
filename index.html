@@ -564,14 +564,21 @@ function updatePanel(){
   }
 }
 function addToWordList(words){
+  for(const w of words) listedWords.push(w);
+  renderWordList(new Set(words));            // rita om listan sorterad på poäng, markera de nya
+}
+function renderWordList(freshSet){
   const ul = document.getElementById("wordlist");
-  for(const w of words){
-    listedWords.push(w);
+  ul.innerHTML = "";
+  const sorted = [...listedWords].sort((a,b)=>b.score-a.score);   // bästa ordet överst
+  for(const w of sorted){
     const li = document.createElement("li");
-    li.className = "new";
     li.innerHTML = `<span>${w.word}</span><span>${w.score} p</span>`;
-    ul.prepend(li);
-    setTimeout(()=>li.classList.remove("new"),600);
+    if(freshSet && freshSet.has(w)){
+      li.className = "new";
+      setTimeout(()=>li.classList.remove("new"),600);
+    }
+    ul.appendChild(li);
   }
 }
 
