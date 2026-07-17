@@ -167,6 +167,7 @@ kbd{background:#31463c;border:1px solid #46604f;border-radius:4px;padding:0 5px;
 .hstable td,.hstable th{padding:4px 6px;text-align:left;border-bottom:1px solid #33493e}
 .hstable td:last-child,.hstable th:last-child{text-align:right}
 .hstable tr.me td{color:var(--ring);font-weight:600}
+.hserror{color:var(--lingon);font-size:13px;margin-top:8px;line-height:1.4;font-weight:600}
 input[type=text]{
   font:inherit;background:#182620;color:var(--text);
   border:1px solid #3d5a4d;border-radius:8px;padding:8px 10px;width:100%;
@@ -267,6 +268,7 @@ input[type=text]{
         <input type="text" id="hsname" maxlength="18" placeholder="Ditt namn">
         <button class="primary" id="hssave">Spara</button>
       </div>
+      <div class="hserror" id="hserror" style="display:none"></div>
     </div>
     <div id="hslistwrap">
       <h2 style="font-family:system-ui;font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-top:14px">Topplista</h2>
@@ -837,42 +839,44 @@ const SUPA_HEADERS = {
   Authorization: "Bearer " + SUPA_KEY,
   "Content-Type": "application/json"
 };
-const HS_CACHE = "wow_highscores";              // lokal reservkopia av senast hämtade lista
-
-let memScores = [];
-async function loadScores(){                      // hämtar den globala listan
+async function loadScores(){                      // hämtar den globala listan; kastar fel om Supabase inte kan nås
+  let r;
   try{
-    const r = await fetch(
+    r = await fetch(
       `${SUPA_URL}/rest/v1/${SUPA_TABLE}?select=name,score,words:word_count,lang:language&order=score.desc&limit=200`,
       { headers: SUPA_HEADERS });
-    if(r.ok){
-      const list = await r.json();
-      memScores = list;
-      try{ localStorage.setItem(HS_CACHE, JSON.stringify(list)); }catch(e){}
-      return list;
-    }
-  }catch(e){}
-  try{                                            // fallback om nätet/API:t inte svarar
-    const s = localStorage.getItem(HS_CACHE);
-    if(s) return JSON.parse(s);
-  }catch(e){}
-  return memScores;
+  }catch(e){
+    throw new Error("Kunde inte nå topplistan (nätverksfel).");
+  }
+  if(!r.ok) throw new Error("Topplistan svarade med fel (" + r.status + ").");
+  return await r.json();
 }
-async function submitScore(entry){                // lägger till EN poäng i den globala listan
+async function submitScore(entry){                // lägger till EN poäng; kastar fel om det misslyckas
+  let r;
   try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}`, {
+    r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}`, {
       method: "POST",
       headers: { ...SUPA_HEADERS, Prefer: "return=minimal" },
       body: JSON.stringify({ name:entry.name, score:entry.score, word_count:entry.words, language:entry.lang })
     });
-    return r.ok;
-  }catch(e){ return false; }
+  }catch(e){
+    throw new Error("Kunde inte spara poängen (nätverksfel).");
+  }
+  if(!r.ok) throw new Error("Poängen kunde inte sparas (" + r.status + ").");
 }
 async function renderHighscores(highlightIdx, preloaded){
-  const list = ((preloaded || await loadScores()) || []).filter(e=>e.lang===lang)
-               .sort((a,b)=>b.score-a.score).slice(0,10);
   const tbl = document.getElementById("hstable");
-  tbl.innerHTML = "<tr><th>#</th><th>Namn</th><th>Ord</th><th>Poäng</th></tr>" +
+  const head = "<tr><th>#</th><th>Namn</th><th>Ord</th><th>Poäng</th></tr>";
+  let list;
+  try{
+    list = preloaded || await loadScores();
+  }catch(err){
+    tbl.innerHTML = head +
+      `<tr><td colspan=4 style='color:var(--lingon)'>${err.message}</td></tr>`;
+    return;
+  }
+  list = list.filter(e=>e.lang===lang).sort((a,b)=>b.score-a.score).slice(0,10);
+  tbl.innerHTML = head +
     (list.length ? "" : "<tr><td colspan=4 style='color:var(--muted)'>Inga resultat ännu.</td></tr>");
   list.forEach((e,i)=>{
     const tr = document.createElement("tr");
@@ -896,14 +900,27 @@ function endGame(){
 }
 document.getElementById("hssave").onclick = async ()=>{
   const btn = document.getElementById("hssave");
+  const err = document.getElementById("hserror");
   const name = (document.getElementById("hsname").value.trim().slice(0,18)) || "Anonym";
   btn.disabled = true;
-  await submitScore({ name, score, words:numWords, lang });
+  err.style.display = "none";
+  try{
+    await submitScore({ name, score, words:numWords, lang });
+  }catch(ex){                                       // sparandet misslyckades – dölj inte felet
+    err.textContent = ex.message + " Försök igen.";
+    err.style.display = "";
+    btn.disabled = false;
+    return;                                         // behåll formuläret så man kan försöka igen
+  }
   document.getElementById("hsentry").style.display = "none";
-  const list = await loadScores();                // hämta om globala listan med den nya poängen
-  const sorted = list.filter(e=>e.lang===lang).sort((a,b)=>b.score-a.score);
-  const idx = sorted.findIndex(e=>e.score===score && e.name===name);
-  renderHighscores(idx>=0 && idx<10 ? idx : undefined, list);
+  try{
+    const list = await loadScores();                // hämta om globala listan med den nya poängen
+    const sorted = list.filter(e=>e.lang===lang).sort((a,b)=>b.score-a.score);
+    const idx = sorted.findIndex(e=>e.score===score && e.name===name);
+    renderHighscores(idx>=0 && idx<10 ? idx : undefined, list);
+  }catch(ex){
+    renderHighscores();                             // poängen sparades men listan gick inte att läsa om – visa felet i tabellen
+  }
   btn.disabled = false;
 };
 
