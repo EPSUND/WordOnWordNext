@@ -825,28 +825,51 @@ function openJokerDialog(forced){
   document.getElementById("jokeroverlay").style.display = "flex";
 }
 
-/* ---------- Slut & topplista ---------- */
+/* ---------- Slut & topplista (global via Supabase) ----------
+   Poängen lagras i tabellen wow_scores i Supabase och nås via dess REST-API.
+   Den publicerbara nyckeln är gjord för att ligga öppet i klienten; vad den får
+   göra styrs av Row Level Security-policyer i databasen (läs + lägg till, inte ändra). */
+const SUPA_URL   = "https://vvspqfbvxuimxcbyyahw.supabase.co";
+const SUPA_KEY   = "sb_publishable_-T5PvrE5hwqAPqiJ1JcKcQ_ZkrOPTHm";
+const SUPA_TABLE = "wow_scores";
+const SUPA_HEADERS = {
+  apikey: SUPA_KEY,
+  Authorization: "Bearer " + SUPA_KEY,
+  "Content-Type": "application/json"
+};
+const HS_CACHE = "wow_highscores";              // lokal reservkopia av senast hämtade lista
+
 let memScores = [];
-async function loadScores(){
+async function loadScores(){                      // hämtar den globala listan
   try{
-    if(window.storage){
-      const r = await window.storage.get("wow_highscores");
-      if(r && r.value) return JSON.parse(r.value);
+    const r = await fetch(
+      `${SUPA_URL}/rest/v1/${SUPA_TABLE}?select=name,score,words:word_count,lang:language&order=score.desc&limit=200`,
+      { headers: SUPA_HEADERS });
+    if(r.ok){
+      const list = await r.json();
+      memScores = list;
+      try{ localStorage.setItem(HS_CACHE, JSON.stringify(list)); }catch(e){}
+      return list;
     }
   }catch(e){}
-  try{
-    const s = localStorage.getItem("wow_highscores");
+  try{                                            // fallback om nätet/API:t inte svarar
+    const s = localStorage.getItem(HS_CACHE);
     if(s) return JSON.parse(s);
   }catch(e){}
   return memScores;
 }
-async function saveScores(list){
-  memScores = list;
-  try{ if(window.storage){ await window.storage.set("wow_highscores", JSON.stringify(list)); return; } }catch(e){}
-  try{ localStorage.setItem("wow_highscores", JSON.stringify(list)); }catch(e){}
+async function submitScore(entry){                // lägger till EN poäng i den globala listan
+  try{
+    const r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}`, {
+      method: "POST",
+      headers: { ...SUPA_HEADERS, Prefer: "return=minimal" },
+      body: JSON.stringify({ name:entry.name, score:entry.score, word_count:entry.words, language:entry.lang })
+    });
+    return r.ok;
+  }catch(e){ return false; }
 }
-async function renderHighscores(highlightIdx){
-  const list = (await loadScores()).filter(e=>e.lang===lang)
+async function renderHighscores(highlightIdx, preloaded){
+  const list = ((preloaded || await loadScores()) || []).filter(e=>e.lang===lang)
                .sort((a,b)=>b.score-a.score).slice(0,10);
   const tbl = document.getElementById("hstable");
   tbl.innerHTML = "<tr><th>#</th><th>Namn</th><th>Ord</th><th>Poäng</th></tr>" +
@@ -854,7 +877,7 @@ async function renderHighscores(highlightIdx){
   list.forEach((e,i)=>{
     const tr = document.createElement("tr");
     if(i===highlightIdx) tr.className = "me";
-    tr.innerHTML = `<td>${i+1}</td><td>${e.name.replace(/[<>&]/g,"")}</td><td>${e.words}</td><td>${e.score}</td>`;
+    tr.innerHTML = `<td>${i+1}</td><td>${(e.name||"").replace(/[<>&]/g,"")}</td><td>${e.words}</td><td>${e.score}</td>`;
     tbl.appendChild(tr);
   });
 }
@@ -872,14 +895,16 @@ function endGame(){
   setTimeout(()=>document.getElementById("endoverlay").style.display = "flex", 700);
 }
 document.getElementById("hssave").onclick = async ()=>{
-  const name = document.getElementById("hsname").value.trim() || "Anonym";
-  const list = await loadScores();
-  list.push({name, score, words:numWords, lang, date:Date.now()});
-  await saveScores(list);
+  const btn = document.getElementById("hssave");
+  const name = (document.getElementById("hsname").value.trim().slice(0,18)) || "Anonym";
+  btn.disabled = true;
+  await submitScore({ name, score, words:numWords, lang });
   document.getElementById("hsentry").style.display = "none";
+  const list = await loadScores();                // hämta om globala listan med den nya poängen
   const sorted = list.filter(e=>e.lang===lang).sort((a,b)=>b.score-a.score);
-  const idx = sorted.findIndex(e=>e.date && e.score===score && e.name===name);
-  renderHighscores(idx>=0 && idx<10 ? idx : undefined);
+  const idx = sorted.findIndex(e=>e.score===score && e.name===name);
+  renderHighscores(idx>=0 && idx<10 ? idx : undefined, list);
+  btn.disabled = false;
 };
 
 /* ---------- Inmatning ---------- */
