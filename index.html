@@ -329,7 +329,7 @@ let isJokerTile = false;
 let jokerUsed = false;              // jokern kan användas när som helst, men bara en gång
 let startHand = [];                // de 5 startbrickorna: {letter, r, c} – r/c null tills placerad
 let selHand = -1;                  // vald bricka i handen under arrangeringen
-let score = 0, numWords = 0, listedWords = [];
+let score = 0, numWords = 0, listedWords = [], bestWord = "";
 
 const boardEl = document.getElementById("board");
 const dropEl  = document.getElementById("dropzone");
@@ -686,7 +686,7 @@ function startGame(){
   rowWords = Array.from({length:ROWS},()=>[]);
   colWords = Array.from({length:COLS},()=>[]);
   bag = makeBag();
-  score = 0; numWords = 0; listedWords = [];
+  score = 0; numWords = 0; listedWords = []; bestWord = "";
   currentLetter = null; nextLetter = null; currentCol = 3;
   isJokerTile = false; jokerUsed = false; jokerPos = null; singleWords = [];
   // De 5 första brickorna hamnar i handen; resten (bag[5..]) faller sedan en och en.
@@ -844,7 +844,7 @@ async function loadScores(){                      // hämtar den globala listan;
   let r;
   try{
     r = await fetch(
-      `${SUPA_URL}/rest/v1/${SUPA_TABLE}?select=name,score,words:word_count,lang:language&order=score.desc&limit=200`,
+      `${SUPA_URL}/rest/v1/${SUPA_TABLE}?select=name,score,words:word_count,lang:language,bestWord:best_word&order=score.desc&limit=200`,
       { headers: SUPA_HEADERS });
   }catch(e){
     throw new Error("Kunde inte nå topplistan (nätverksfel).");
@@ -858,7 +858,7 @@ async function submitScore(entry){                // lägger till EN poäng; kas
     r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}`, {
       method: "POST",
       headers: { ...SUPA_HEADERS, Prefer: "return=minimal" },
-      body: JSON.stringify({ name:entry.name, score:entry.score, word_count:entry.words, language:entry.lang })
+      body: JSON.stringify({ name:entry.name, score:entry.score, word_count:entry.words, language:entry.lang, best_word:entry.bestWord || null })
     });
   }catch(e){
     throw new Error("Kunde inte spara poängen (nätverksfel).");
@@ -867,22 +867,22 @@ async function submitScore(entry){                // lägger till EN poäng; kas
 }
 async function renderHighscores(highlightIdx, preloaded){
   const tbl = document.getElementById("hstable");
-  const head = "<tr><th>#</th><th>Namn</th><th>Ord</th><th>Poäng</th></tr>";
+  const head = "<tr><th>#</th><th>Namn</th><th>Ord</th><th>Bästa ord</th><th>Poäng</th></tr>";
   let list;
   try{
     list = preloaded || await loadScores();
   }catch(err){
     tbl.innerHTML = head +
-      `<tr><td colspan=4 style='color:var(--lingon)'>${err.message}</td></tr>`;
+      `<tr><td colspan=5 style='color:var(--lingon)'>${err.message}</td></tr>`;
     return;
   }
   list = list.filter(e=>e.lang===lang).sort((a,b)=>b.score-a.score).slice(0,10);
   tbl.innerHTML = head +
-    (list.length ? "" : "<tr><td colspan=4 style='color:var(--muted)'>Inga resultat ännu.</td></tr>");
+    (list.length ? "" : "<tr><td colspan=5 style='color:var(--muted)'>Inga resultat ännu.</td></tr>");
   list.forEach((e,i)=>{
     const tr = document.createElement("tr");
     if(i===highlightIdx) tr.className = "me";
-    tr.innerHTML = `<td>${i+1}</td><td>${(e.name||"").replace(/[<>&]/g,"")}</td><td>${e.words}</td><td>${e.score}</td>`;
+    tr.innerHTML = `<td>${i+1}</td><td>${(e.name||"").replace(/[<>&]/g,"")}</td><td>${e.words}</td><td>${(e.bestWord||"–").replace(/[<>&]/g,"")}</td><td>${e.score}</td>`;
     tbl.appendChild(tr);
   });
 }
@@ -893,6 +893,7 @@ function endGame(){
   document.getElementById("finalwords").textContent = numWords;
   const best = listedWords.concat([...rowWords.flat(), ...colWords.flat()])
                .sort((a,b)=>b.score-a.score)[0];
+  bestWord = best ? best.word : "";
   document.getElementById("finalbest").textContent = best ? best.word : "–";
   document.getElementById("hsentry").style.display = "";
   document.getElementById("hsname").value = "";
@@ -906,7 +907,7 @@ document.getElementById("hssave").onclick = async ()=>{
   btn.disabled = true;
   err.style.display = "none";
   try{
-    await submitScore({ name, score, words:numWords, lang });
+    await submitScore({ name, score, words:numWords, lang, bestWord });
   }catch(ex){                                       // sparandet misslyckades – dölj inte felet
     err.textContent = ex.message + " Försök igen.";
     err.style.display = "";
