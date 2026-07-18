@@ -135,8 +135,9 @@ button.primary{background:var(--ring);border-color:var(--ring);color:#221a08;fon
   box-shadow:0 0 8px #d9a44166,inset 0 0 6px #d9a44133;
 }
 .ring.s{border-radius:50%}
-/* Lodräta ord har samma GEOMETRI som vågräta (inset, radie, kantbredd) men
-   behåller sin egen färg, så att korsande ord går att skilja åt. */
+/* Lodräta ord: egen färg och ett något snävare inset (sätts i Board.tsx), så
+   att korsande vågräta och lodräta ringar går att skilja åt. Kantbredd och
+   radie delas med de vågräta. */
 .ring.v{border-color:var(--ring2)}
 .ring.new{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}

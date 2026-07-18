@@ -73,10 +73,16 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
       );
     }
 
-  // Ordringar. Insetarna är andelar av brickan, inte fasta px: de gav annars
-  // för trånga ringar på små brickor (landskap). Vågrätt och lodrätt använder
-  // samma värde så att markeringarna ser likadana ut.
-  const ringInset = Math.max(2, t * 0.054); // 3px vid 56px-brickan
+  // Ordringar. Insetarna är ANDELAR av brickan, inte fasta px – det var det
+  // som gjorde lodräta ringar oläsligt trånga i landskap. Med en andel blir
+  // förhållandet ring/bokstav detsamma i alla storlekar.
+  //
+  // Lodrätt är avsiktligt snävare än vågrätt så att korsande ord går att
+  // skilja åt. Taket för hur snävt det får bli sätts av bokstaven: ringens
+  // inre bredd blir t*(1 - 2*inset - 2*kant) och bokstaven är t*0.52, så
+  // 0.107 lämnar ~30 % marginal runt bokstaven oavsett brickstorlek.
+  const ringInset = Math.max(2, t * 0.054); // vågrätt: 3px vid 56px-brickan
+  const vRingInset = Math.max(2, t * 0.107); // lodrätt: 6px vid 56px-brickan
   const singleInset = Math.max(3, t * 0.089); // 5px vid 56px-brickan
 
   const rings: React.ReactNode[] = [];
@@ -101,7 +107,7 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
   );
   state.colWords.forEach((list, c) =>
     list.forEach((w) => {
-      const inset = ringInset;
+      const inset = vRingInset;
       const [x, y] = cellXY(w.a, c, t);
       const key = `c${c}:${w.word}@${w.a}`;
       rings.push(
