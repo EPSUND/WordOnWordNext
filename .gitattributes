@@ -1,0 +1,12 @@
+# Normalisera radbrytningar så att utcheckningen blir likadan på alla plattformar.
+* text=auto eol=lf
+
+# Ordlistorna läses i runtime och MÅSTE vara LF – se src/lib/dict.ts.
+*.txt text eol=lf
+
+# Binärt: rör inte.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

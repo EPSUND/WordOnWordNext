@@ -13,7 +13,15 @@ export async function loadDict(lang: Lang): Promise<Set<string>> {
       const res = await fetch(`${import.meta.env.BASE_URL}dict-${lang}.txt`);
       if (!res.ok) throw new Error(`Kunde inte ladda ordlistan (${res.status}).`);
       const raw = await res.text();
-      const set = new Set(raw.split("\n"));
+      // Dela på både LF och CRLF. Med core.autocrlf=true checkas filerna ut med
+      // CRLF på Windows; en split på enbart "\n" gav då ord med släpande \r,
+      // så INGET ord utom enbokstavsorden (som inte slår i ordlistan) godkändes.
+      const set = new Set(
+        raw
+          .split(/\r?\n/)
+          .map((w) => w.trim())
+          .filter(Boolean),
+      );
       DICTS[lang] = set;
       return set;
     })();
