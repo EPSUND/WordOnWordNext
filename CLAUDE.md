@@ -104,6 +104,9 @@ legacy/index.html   Gamla enfils-versionen (referens)
   returneras tokensträngen (`"min(12.2vw, 48px)"`), inte px – `parseFloat` gav `NaN`. `useTileSize`
   mäter därför ett dolt probe-element med `ResizeObserver`. JS och CSS måste vara överens om
   brickstorleken, annars ritas brädet i en storlek och brickorna placeras i en annan.
+- **Använd `svh`, aldrig `dvh`, i höjdberäkningar.** `dvh` krymper/växer när mobilens adressfält
+  fälls in och ut, så `--tile-size` räknades om mitt under scrollen och brädet ändrade storlek
+  medan man scrollade. `svh` är den stabila minsta höjden.
 - **Ordlistorna måste vara LF.** `.gitattributes` tvingar `eol=lf`; `dict.ts` delar dessutom på
   `/\r?\n/`. Med CRLF och en `"\n"`-split får varje ord ett släpande `\r` och *inget* ord utom
   enbokstavsorden godkänns – en bugg som bara syns lokalt på Windows, eftersom Actions bygger

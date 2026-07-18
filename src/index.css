@@ -21,14 +21,16 @@ body{
   color:var(--text);
   font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
   min-height:100vh;
-  min-height:100dvh; /* dvh: adressfältet på mobil ska inte klippa layouten */
+  /* svh, inte dvh: dvh ändras när adressfältet fälls in/ut under scroll och
+     får layouten att hoppa. svh är den stabila minsta höjden. */
+  min-height:100svh;
   /* Stänger av dubbeltryck-zoom och dess ~300ms klickfördröjning. */
   touch-action:manipulation;
   -webkit-text-size-adjust:100%;
 }
 #root{
   min-height:100vh;
-  min-height:100dvh;
+  min-height:100svh; /* se body ovan */
   display:flex;flex-direction:column;align-items:center;
   padding:18px 14px 40px;
   padding-left:max(14px,env(safe-area-inset-left));
@@ -205,50 +207,31 @@ input[type=date]{color-scheme:dark}
   .startbtn2:hover:not(:disabled){background:#e5b455}
 }
 
-/* ---------- Kompakt geometri: smal ELLER låg skärm ----------
+/* ---------- Kompakt läge: smal ELLER låg skärm ----------
    Låg skärm måste vara med: en telefon i landskap är ~840px bred men bara
    ~390px hög, och skulle med enbart en max-width-regel få skrivbordets
    56px-brickor och ett bräde som hamnar utanför skärmen.
 
-   Brickstorleken kläms mot både bredd och höjd så att brädet ryms utan scroll.
+   ANVÄND svh, INTE dvh, för brickstorleken. dvh är den *dynamiska* höjden och
+   krymper/växer när mobilens adressfält fälls in och ut – med dvh räknades
+   --tile-size om mitt under scrollen, så bräde och dropzon ändrade storlek
+   medan man scrollade. svh är den stabila "minsta" höjden (adressfältet
+   framme) och ger ett värde som inte hoppar.
+
    Höjdbudget: 8 brickrader (7 på brädet + dropzonen) plus --chrome för allt
    annat som konkurrerar om höjden. --chrome skiljer sig mellan layouterna:
    i landskap ligger korten BREDVID brädet och stjäl ingen höjd, medan de i
    den staplade mobillayouten gör det (sätts längre ner). Golvet på 26px
-   hindrar oläsbart små brickor på riktigt låga fönster – då får man scrolla. */
+   hindrar oläsbart små brickor på riktigt låga fönster. */
 @media (max-width:700px), (max-height:600px){
   :root{--chrome:130px}
-  :root{--tile-size:min(12.2vw,48px)} /* fallback utan dvh-stöd */
-  :root{--tile-size:max(26px,min(12.2vw,calc((100dvh - var(--chrome)) / 8),48px))}
+  :root{--tile-size:min(12.2vw,48px)} /* fallback utan svh-stöd */
+  :root{--tile-size:max(26px,min(12.2vw,calc((100svh - var(--chrome)) / 8),48px))}
 
   #root{padding:10px 12px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
   header{margin-bottom:8px}
   .layout{gap:14px}
   .dropzone{margin-bottom:6px}
-}
-
-/* Låg skärm: rubriken äter vertikal plats som brädet behöver bättre, och
-   ordlistan kortas så att högerkolumnen inte blir mycket högre än brädet. */
-@media (max-height:600px){
-  h1{font-size:22px}
-  #root{padding-top:8px}
-  header{margin-bottom:6px}
-  #wordlist{max-height:120px}
-}
-
-/* ---------- Smal skärm: en kolumn ----------
-   Korten staplas i DOM-ordning: status, bräde, kontroller, ordlista.
-   Statusraden och kontrollerna ligger då över/under brädet och äter höjd,
-   därav en större --chrome än i landskapsläget ovan. */
-@media (max-width:700px){
-  :root{--chrome:200px}
-
-  .layout{
-    grid-template-columns:minmax(0,1fr);
-    grid-template-areas:"status" "board" "controls" "words";
-    justify-items:center;gap:10px;
-  }
-  .boardwrap,.status,.controls,.words{width:calc(var(--tile-size)*7 + 16px);max-width:100%}
 
   /* Poängkortet blir en kompakt rad: rubrik och de mindre viktiga värdena
      (språk/läge, valda i startdialogen) döljs för att spara höjd. */
@@ -263,6 +246,37 @@ input[type=date]{color-scheme:dark}
 
   .controls{padding:10px 12px}
   .controls h2{display:none}
+}
+
+/* ---------- Låg skärm (landskap): tvåkolumners, allt inom en skärm ----------
+   Att stapla vore fel här – med korten över/under brädet blir brickorna
+   pyttesmå. I stället låser vi sidan till skärmhöjden och låter ordlistan
+   ta det som blir över och scrolla internt, så att brädet ALLTID är synligt
+   och inget resizas när man scrollar. */
+@media (max-height:600px){
+  h1{font-size:22px}
+  #root{padding-top:8px;height:100svh}
+  header{margin-bottom:6px}
+
+  .layout{flex:1;min-height:0;gap:10px 18px;grid-template-rows:auto auto minmax(0,1fr)}
+  .status .scorebig{font-size:26px}
+  .words{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  #wordlist{max-height:none;flex:1;min-height:0}
+}
+
+/* ---------- Smal OCH tillräckligt hög skärm: en kolumn ----------
+   Korten staplas i DOM-ordning: status, bräde, kontroller, ordlista.
+   min-height utesluter landskap, som hanteras av blocket ovan. Statusraden
+   och kontrollerna äter höjd här, därav en större --chrome. */
+@media (max-width:700px) and (min-height:601px){
+  :root{--chrome:200px}
+
+  .layout{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"status" "board" "controls" "words";
+    justify-items:center;gap:10px;
+  }
+  .boardwrap,.status,.controls,.words{width:calc(var(--tile-size)*7 + 16px);max-width:100%}
   #wordlist{max-height:150px}
 }
 
