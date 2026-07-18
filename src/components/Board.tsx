@@ -243,7 +243,11 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
       {floats.map((f) => {
         const [x, y] = cellXY(f.r, f.c, t);
         return (
-          <div key={`f${f.id}`} className="floatpts" style={{ left: x + 8, top: y - 4 }}>
+          <div
+            key={`f${f.id}`}
+            className="floatpts"
+            style={{ left: x + t * 0.14, top: y - t * 0.07 }}
+          >
             +{f.pts}
           </div>
         );
