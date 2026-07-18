@@ -18,6 +18,21 @@ function ctx(): AudioContext {
   return audioCtx;
 }
 
+/**
+ * iOS/Safari startar en AudioContext som "suspended" om den inte skapas eller
+ * återupptas i en användargest. Våra ljud spelas från animationend-callbacks,
+ * alltså utanför en gest – utan det här blir spelet helt tyst på iPhone.
+ * Anropas en gång vid första tryck/tangenttryck.
+ */
+export function unlockAudio(): void {
+  try {
+    const ac = ctx();
+    if (ac.state === "suspended") void ac.resume();
+  } catch {
+    /* ignorera ljudfel */
+  }
+}
+
 /** Uppåtgående "pling" med lika många toner som ordlängden (max 7). */
 export function pling(len: number): void {
   if (!soundOn) return;

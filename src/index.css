@@ -21,11 +21,18 @@ body{
   color:var(--text);
   font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
   min-height:100vh;
+  min-height:100dvh; /* dvh: adressfältet på mobil ska inte klippa layouten */
+  /* Stänger av dubbeltryck-zoom och dess ~300ms klickfördröjning. */
+  touch-action:manipulation;
+  -webkit-text-size-adjust:100%;
 }
 #root{
   min-height:100vh;
+  min-height:100dvh;
   display:flex;flex-direction:column;align-items:center;
   padding:18px 14px 40px;
+  padding-left:max(14px,env(safe-area-inset-left));
+  padding-right:max(14px,env(safe-area-inset-right));
 }
 header{width:100%;max-width:920px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 h1{
@@ -39,10 +46,8 @@ button{
   font:inherit;color:var(--text);background:#2b423880;
   border:1px solid #3d5a4d;border-radius:8px;padding:7px 14px;cursor:pointer;
 }
-button:hover{background:#35513f}
 button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
 button.primary{background:var(--ring);border-color:var(--ring);color:#221a08;font-weight:600}
-button.primary:hover{background:#e5b455}
 
 .layout{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;max-width:920px}
 
@@ -69,7 +74,6 @@ button.primary:hover{background:#e5b455}
   border-radius:6px;pointer-events:none;
 }
 .colhit{position:absolute;top:0;bottom:0;width:var(--tile-size);cursor:pointer}
-.colhit:hover{background:#ffffff08}
 
 .tile{
   position:absolute;left:0;top:0;width:var(--tile-size);height:var(--tile-size);
@@ -137,11 +141,9 @@ button.primary:hover{background:#e5b455}
 .hint{font-size:12.5px;color:var(--muted);line-height:1.5}
 kbd{background:#31463c;border:1px solid #46604f;border-radius:4px;padding:0 5px;font-size:11px}
 .jokerbtn{width:100%;margin-top:12px;background:#3a2320;border-color:#a03d33;color:#e8a29b;font-weight:600}
-.jokerbtn:hover:not(:disabled){background:#4a2c28}
 .jokerbtn:disabled{opacity:.4;cursor:not-allowed}
 .jokerbtn kbd{background:#5a2f2a;border-color:#a03d33}
 .startbtn2{width:100%;margin-top:12px;background:var(--ring);border-color:var(--ring);color:#221a08;font-weight:700}
-.startbtn2:hover:not(:disabled){background:#e5b455}
 .startbtn2:disabled{opacity:.4;cursor:not-allowed}
 .prepnote{margin-top:10px;font-size:12.5px;color:var(--ring);font-weight:600;line-height:1.4}
 .cellhit{position:absolute;cursor:pointer;border-radius:8px;z-index:5}
@@ -178,7 +180,35 @@ input[type=date]{color-scheme:dark}
 .final div b{display:block;font-family:Georgia,serif;font-size:30px;color:var(--tile1)}
 .final div{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
 
+/* ---------- Hovring: bara för mus/styrplatta ----------
+   På touch "fastnar" :hover efter ett tryck tills man rör något annat. */
+@media (hover:hover){
+  button:hover{background:#35513f}
+  button.primary:hover{background:#e5b455}
+  .colhit:hover{background:#ffffff08}
+  .jokerbtn:hover:not(:disabled){background:#4a2c28}
+  .startbtn2:hover:not(:disabled){background:#e5b455}
+}
+
+/* ---------- Mobil ---------- */
 @media (max-width:700px){
+  /* Brickstorleken klämd mot BÅDE bredd och höjd, så att dropzon + bräde
+     ryms på en skärm utan scroll. Höjdbudget: 8 brickrader (bräde + dropzon)
+     plus ~130px för header, marginaler och padding. */
   :root{--tile-size:min(12.2vw,48px)}
+  :root{--tile-size:max(30px,min(12.2vw,calc((100dvh - 130px) / 8),48px))}
+
+  #root{padding:10px 12px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  header{margin-bottom:8px}
+  .layout{gap:14px}
+  .dropzone{margin-bottom:6px}
   .panel{width:calc(var(--tile-size)*7 + 16px)}
+
+  /* Träffytor: minst ~44px och inget iOS-autozoom (kräver >=16px i fält). */
+  button{padding:10px 14px;min-height:44px}
+  .header-btns button{min-height:40px}
+  input[type=text],input[type=date]{font-size:16px;min-height:44px}
+  .dialog{padding:18px}
+  .jokergrid{grid-template-columns:repeat(5,1fr);gap:8px}
+  .jokergrid button{padding:0;min-height:46px}
 }

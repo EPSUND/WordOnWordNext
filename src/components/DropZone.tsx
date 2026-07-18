@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { GameState } from "../game/reducer";
 import { COLS, VALUES } from "../lib/engine/constants";
 import { PAD } from "../lib/engine/grid";
+import { useCoarsePointer } from "../hooks/useCoarsePointer";
 
 interface Props {
   state: GameState;
@@ -15,6 +16,7 @@ const pts = (lang: GameState["lang"], letter: string) => VALUES[lang][letter] ||
 
 export default function DropZone({ state, tile, onSetCol, onDrop, onSelectHand }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const coarse = useCoarsePointer();
   const shakeSeen = useRef(state.shake);
   const t = tile;
 
@@ -67,8 +69,16 @@ export default function DropZone({ state, tile, onSetCol, onDrop, onSelectHand }
             key={`dcol${c}`}
             className="colhit"
             style={{ left: PAD + c * t }}
-            onPointerMove={() => onSetCol(c)}
-            onClick={() => (state.currentCol === c ? onDrop() : onSetCol(c))}
+            // Se Board.tsx: ett tryck = välj + släpp på touch.
+            onPointerMove={coarse ? undefined : () => onSetCol(c)}
+            onClick={
+              coarse
+                ? () => {
+                    onSetCol(c);
+                    onDrop();
+                  }
+                : () => (state.currentCol === c ? onDrop() : onSetCol(c))
+            }
           />
         ))}
     </div>

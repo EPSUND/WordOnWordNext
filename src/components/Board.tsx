@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GameState } from "../game/reducer";
 import { COLS, ROWS, VALUES } from "../lib/engine/constants";
 import { PAD, cellXY, landingRow } from "../lib/engine/grid";
+import { useCoarsePointer } from "../hooks/useCoarsePointer";
 
 interface Props {
   state: GameState;
@@ -23,6 +24,7 @@ interface Float {
 
 export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, onLanded }: Props) {
   const { grid, lang, phase } = state;
+  const coarse = useCoarsePointer();
   const [hover, setHover] = useState<{ r: number; c: number } | null>(null);
   const [floats, setFloats] = useState<Float[]>([]);
   const lastFloat = useRef(-1);
@@ -185,8 +187,17 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
           key={`col${c}`}
           className="colhit"
           style={{ left: PAD + c * t }}
-          onPointerMove={() => onSetCol(c)}
-          onClick={() => (state.currentCol === c ? onDrop() : onSetCol(c))}
+          // På touch finns ingen hovring: ett tryck väljer kolumn OCH släpper.
+          // (Reducern kör actions i ordning, så drop ser den nya kolumnen.)
+          onPointerMove={coarse ? undefined : () => onSetCol(c)}
+          onClick={
+            coarse
+              ? () => {
+                  onSetCol(c);
+                  onDrop();
+                }
+              : () => (state.currentCol === c ? onDrop() : onSetCol(c))
+          }
         />,
       );
     }
@@ -199,8 +210,12 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
             key={`cell${r}-${c}`}
             className="cellhit"
             style={{ left: x, top: y, width: t, height: t }}
-            onPointerEnter={() => setHover({ r, c })}
-            onPointerLeave={() => setHover((h) => (h && h.r === r && h.c === c ? null : h))}
+            // Spökbrickan är en hover-effekt – på touch skulle den fastna
+            // under fingret efter tryck, så den hoppas över där.
+            onPointerEnter={coarse ? undefined : () => setHover({ r, c })}
+            onPointerLeave={
+              coarse ? undefined : () => setHover((h) => (h && h.r === r && h.c === c ? null : h))
+            }
             onClick={() => onArrangeClick(r, c)}
           />,
         );

@@ -4,7 +4,7 @@ import type { GameMode, Lang } from "../lib/types";
 import { loadDict } from "../lib/dict";
 import { makeBag } from "../lib/engine/bag";
 import { hashSeed, mulberry32, todayStr } from "../lib/engine/rng";
-import { pling, thud } from "../lib/sound";
+import { pling, thud, unlockAudio } from "../lib/sound";
 
 export function useGame() {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -20,6 +20,18 @@ export function useGame() {
     // soundPlingLen medvetet utanför deps – vi spelar bara när räknaren ändras.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.soundPling]);
+
+  // Lås upp ljudet vid första användargesten (krav på iOS – se sound.ts).
+  useEffect(() => {
+    const on = () => unlockAudio();
+    const opts = { once: true, passive: true } as const;
+    window.addEventListener("pointerdown", on, opts);
+    window.addEventListener("keydown", on, opts);
+    return () => {
+      window.removeEventListener("pointerdown", on);
+      window.removeEventListener("keydown", on);
+    };
+  }, []);
 
   // Tangentbordsstyrning beroende på fas.
   useEffect(() => {
