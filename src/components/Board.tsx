@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GameState } from "../game/reducer";
 import { COLS, ROWS, VALUES } from "../lib/engine/constants";
 import { PAD, cellXY, landingRow } from "../lib/engine/grid";
+import { useCoarsePointer } from "../hooks/useCoarsePointer";
 
 interface Props {
   state: GameState;
@@ -23,6 +24,7 @@ interface Float {
 
 export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, onLanded }: Props) {
   const { grid, lang, phase } = state;
+  const coarse = useCoarsePointer();
   const [hover, setHover] = useState<{ r: number; c: number } | null>(null);
   const [floats, setFloats] = useState<Float[]>([]);
   const lastFloat = useRef(-1);
@@ -71,11 +73,22 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
       );
     }
 
-  // Ordringar
+  // Ordringar. Insetarna är ANDELAR av brickan, inte fasta px – det var det
+  // som gjorde lodräta ringar oläsligt trånga i landskap. Med en andel blir
+  // förhållandet ring/bokstav detsamma i alla storlekar.
+  //
+  // Lodrätt är avsiktligt snävare än vågrätt så att korsande ord går att
+  // skilja åt. Taket för hur snävt det får bli sätts av bokstaven: ringens
+  // inre bredd blir t*(1 - 2*inset - 2*kant) och bokstaven är t*0.52, så
+  // 0.107 lämnar ~30 % marginal runt bokstaven oavsett brickstorlek.
+  const ringInset = Math.max(2, t * 0.054); // vågrätt: 3px vid 56px-brickan
+  const vRingInset = Math.max(2, t * 0.107); // lodrätt: 6px vid 56px-brickan
+  const singleInset = Math.max(3, t * 0.089); // 5px vid 56px-brickan
+
   const rings: React.ReactNode[] = [];
   state.rowWords.forEach((list, r) =>
     list.forEach((w) => {
-      const inset = 3;
+      const inset = ringInset;
       const [x, y] = cellXY(r, w.a, t);
       const key = `r${r}:${w.word}@${w.a}`;
       rings.push(
@@ -94,7 +107,7 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
   );
   state.colWords.forEach((list, c) =>
     list.forEach((w) => {
-      const inset = 7;
+      const inset = vRingInset;
       const [x, y] = cellXY(w.a, c, t);
       const key = `c${c}:${w.word}@${w.a}`;
       rings.push(
@@ -112,7 +125,7 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
     }),
   );
   state.singleWords.forEach((w) => {
-    const inset = 5;
+    const inset = singleInset;
     const [x, y] = cellXY(w.r, w.c, t);
     const key = `s:${w.r},${w.c}`;
     rings.push(
@@ -185,8 +198,17 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
           key={`col${c}`}
           className="colhit"
           style={{ left: PAD + c * t }}
-          onPointerMove={() => onSetCol(c)}
-          onClick={() => (state.currentCol === c ? onDrop() : onSetCol(c))}
+          // På touch finns ingen hovring: ett tryck väljer kolumn OCH släpper.
+          // (Reducern kör actions i ordning, så drop ser den nya kolumnen.)
+          onPointerMove={coarse ? undefined : () => onSetCol(c)}
+          onClick={
+            coarse
+              ? () => {
+                  onSetCol(c);
+                  onDrop();
+                }
+              : () => (state.currentCol === c ? onDrop() : onSetCol(c))
+          }
         />,
       );
     }
@@ -199,8 +221,12 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
             key={`cell${r}-${c}`}
             className="cellhit"
             style={{ left: x, top: y, width: t, height: t }}
-            onPointerEnter={() => setHover({ r, c })}
-            onPointerLeave={() => setHover((h) => (h && h.r === r && h.c === c ? null : h))}
+            // Spökbrickan är en hover-effekt – på touch skulle den fastna
+            // under fingret efter tryck, så den hoppas över där.
+            onPointerEnter={coarse ? undefined : () => setHover({ r, c })}
+            onPointerLeave={
+              coarse ? undefined : () => setHover((h) => (h && h.r === r && h.c === c ? null : h))
+            }
             onClick={() => onArrangeClick(r, c)}
           />,
         );
@@ -217,7 +243,11 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
       {floats.map((f) => {
         const [x, y] = cellXY(f.r, f.c, t);
         return (
-          <div key={`f${f.id}`} className="floatpts" style={{ left: x + 8, top: y - 4 }}>
+          <div
+            key={`f${f.id}`}
+            className="floatpts"
+            style={{ left: x + t * 0.14, top: y - t * 0.07 }}
+          >
             +{f.pts}
           </div>
         );

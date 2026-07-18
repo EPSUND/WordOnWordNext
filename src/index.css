@@ -21,11 +21,20 @@ body{
   color:var(--text);
   font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
   min-height:100vh;
+  /* svh, inte dvh: dvh ändras när adressfältet fälls in/ut under scroll och
+     får layouten att hoppa. svh är den stabila minsta höjden. */
+  min-height:100svh;
+  /* Stänger av dubbeltryck-zoom och dess ~300ms klickfördröjning. */
+  touch-action:manipulation;
+  -webkit-text-size-adjust:100%;
 }
 #root{
   min-height:100vh;
+  min-height:100svh; /* se body ovan */
   display:flex;flex-direction:column;align-items:center;
   padding:18px 14px 40px;
+  padding-left:max(14px,env(safe-area-inset-left));
+  padding-right:max(14px,env(safe-area-inset-right));
 }
 header{width:100%;max-width:920px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 h1{
@@ -39,12 +48,25 @@ button{
   font:inherit;color:var(--text);background:#2b423880;
   border:1px solid #3d5a4d;border-radius:8px;padding:7px 14px;cursor:pointer;
 }
-button:hover{background:#35513f}
 button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
 button.primary{background:var(--ring);border-color:var(--ring);color:#221a08;font-weight:600}
-button.primary:hover{background:#e5b455}
 
-.layout{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;max-width:920px}
+/* Grid i stället för flex: korten ligger i mobilens läsordning i DOM:en och
+   flyttas hit till en högerkolumn på skrivbord, utan dubblerad markup. */
+.layout{
+  display:grid;
+  grid-template-columns:auto 250px;
+  grid-template-areas:
+    "board status"
+    "board controls"
+    "board words";
+  align-items:start;justify-content:center;
+  gap:14px 22px;width:100%;max-width:920px;
+}
+.boardwrap{grid-area:board}
+.status{grid-area:status}
+.controls{grid-area:controls}
+.words{grid-area:words}
 
 /* ---------- Brädet ---------- */
 .boardwrap{position:relative}
@@ -69,7 +91,6 @@ button.primary:hover{background:#e5b455}
   border-radius:6px;pointer-events:none;
 }
 .colhit{position:absolute;top:0;bottom:0;width:var(--tile-size);cursor:pointer}
-.colhit:hover{background:#ffffff08}
 
 .tile{
   position:absolute;left:0;top:0;width:var(--tile-size);height:var(--tile-size);
@@ -84,8 +105,13 @@ button.primary:hover{background:#e5b455}
   pointer-events:none;
 }
 .tile .pts{
-  position:absolute;right:5px;bottom:2px;
-  font-family:system-ui,sans-serif;font-size:11px;font-weight:600;color:#7a6a4d;
+  position:absolute;
+  /* Måste skala med brickan, annars blir siffran nästan lika stor som
+     bokstaven på små brickor (landskap) och skymmer den. Faktorerna är valda
+     så att 56px-brickan får exakt samma 11px/5px/2px som tidigare. */
+  right:calc(var(--tile-size)*.09);bottom:calc(var(--tile-size)*.04);
+  font-family:system-ui,sans-serif;font-weight:600;color:#7a6a4d;
+  font-size:clamp(7px,calc(var(--tile-size)*.196),11px);line-height:1;
 }
 .tile.joker{background:linear-gradient(160deg,#e8a29b,#d2766c);border-color:#a03d33;box-shadow:0 3px 0 #8c352c,0 4px 8px #0006}
 .tile.joker .pts{color:#7c2a22}
@@ -100,27 +126,36 @@ button.primary:hover{background:#e5b455}
 
 /* Ordringar – signaturen */
 .ring{
-  position:absolute;pointer-events:none;border-radius:12px;
-  border:3px solid var(--ring);
+  position:absolute;pointer-events:none;
+  /* Skalar med brickan: fasta px gjorde ringen oproportionerligt tjock och
+     trång på små brickor (landskap). Faktorerna ger exakt 3px/12px vid 56px. */
+  border-width:max(2px,calc(var(--tile-size)*.054));
+  border-style:solid;border-color:var(--ring);
+  border-radius:calc(var(--tile-size)*.214);
   box-shadow:0 0 8px #d9a44166,inset 0 0 6px #d9a44133;
 }
 .ring.s{border-radius:50%}
-.ring.v{border-color:var(--ring2);border-style:solid;border-radius:16px}
+/* Lodräta ord: egen färg och ett något snävare inset (sätts i Board.tsx), så
+   att korsande vågräta och lodräta ringar går att skilja åt. Kantbredd och
+   radie delas med de vågräta. */
+.ring.v{border-color:var(--ring2)}
 .ring.new{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
 
 .floatpts{
-  position:absolute;left:0;top:0;font-weight:700;color:var(--ring);font-size:18px;
+  position:absolute;left:0;top:0;font-weight:700;color:var(--ring);
+  /* Skalar med brickan av samma skäl som .pts – 18px vid 56px-brickan. */
+  font-size:clamp(12px,calc(var(--tile-size)*.32),18px);
   text-shadow:0 1px 3px #000;pointer-events:none;
   animation:floatup 1.1s ease-out forwards;z-index:30;
 }
 @keyframes floatup{0%{opacity:0;transform:translateY(6px)}15%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}
 
-/* ---------- Sidopanel ---------- */
-.panel{width:250px;display:flex;flex-direction:column;gap:14px}
+/* ---------- Sidokort ---------- */
 .card{background:#20302a;border:1px solid #33493e;border-radius:12px;padding:12px 14px}
 .scorebig{font-family:Georgia,serif;font-size:40px;font-weight:700;color:var(--tile1);line-height:1}
 .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);font-weight:600;margin-bottom:6px}
+.stats{margin-top:8px} /* ersätter den inline-stil som låg i gamla SidePanel */
 .statrow{display:flex;justify-content:space-between;font-size:14px;color:var(--text);padding:2px 0}
 .statrow b{color:var(--tile1)}
 .nextwrap{display:flex;align-items:center;gap:12px}
@@ -137,11 +172,9 @@ button.primary:hover{background:#e5b455}
 .hint{font-size:12.5px;color:var(--muted);line-height:1.5}
 kbd{background:#31463c;border:1px solid #46604f;border-radius:4px;padding:0 5px;font-size:11px}
 .jokerbtn{width:100%;margin-top:12px;background:#3a2320;border-color:#a03d33;color:#e8a29b;font-weight:600}
-.jokerbtn:hover:not(:disabled){background:#4a2c28}
 .jokerbtn:disabled{opacity:.4;cursor:not-allowed}
 .jokerbtn kbd{background:#5a2f2a;border-color:#a03d33}
 .startbtn2{width:100%;margin-top:12px;background:var(--ring);border-color:var(--ring);color:#221a08;font-weight:700}
-.startbtn2:hover:not(:disabled){background:#e5b455}
 .startbtn2:disabled{opacity:.4;cursor:not-allowed}
 .prepnote{margin-top:10px;font-size:12.5px;color:var(--ring);font-weight:600;line-height:1.4}
 .cellhit{position:absolute;cursor:pointer;border-radius:8px;z-index:5}
@@ -154,9 +187,15 @@ kbd{background:#31463c;border:1px solid #46604f;border-radius:4px;padding:0 5px;
 /* ---------- Overlays ---------- */
 .overlay{
   position:fixed;inset:0;background:#0c1512cc;backdrop-filter:blur(3px);
-  display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;
+  display:flex;justify-content:center;z-index:100;padding:16px;
+  /* align-items:center + overflow klipper toppen på dialoger som är högre än
+     skärmen, och den delen går då inte att scrolla fram (märks i landskap,
+     där topplistan är högre än de ~390px som finns). flex-start + margin:auto
+     på dialogen centrerar när den får plats och klipper aldrig när den inte gör det. */
+  align-items:flex-start;overflow-y:auto;overscroll-behavior:contain;
+  padding-bottom:max(16px,env(safe-area-inset-bottom));
 }
-.dialog{background:#22362e;border:1px solid #3d5a4d;border-radius:14px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 60px #000a}
+.dialog{background:#22362e;border:1px solid #3d5a4d;border-radius:14px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 60px #000a;margin:auto}
 .dialog h2{font-family:Georgia,serif;font-size:24px;color:var(--tile1);margin-bottom:10px;letter-spacing:.03em}
 .dialog p{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}
 .langrow,.btnrow{display:flex;gap:10px;margin-top:10px}
@@ -178,7 +217,97 @@ input[type=date]{color-scheme:dark}
 .final div b{display:block;font-family:Georgia,serif;font-size:30px;color:var(--tile1)}
 .final div{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
 
-@media (max-width:700px){
-  :root{--tile-size:min(12.2vw,48px)}
-  .panel{width:calc(var(--tile-size)*7 + 16px)}
+/* ---------- Hovring: bara för mus/styrplatta ----------
+   På touch "fastnar" :hover efter ett tryck tills man rör något annat. */
+@media (hover:hover){
+  button:hover{background:#35513f}
+  button.primary:hover{background:#e5b455}
+  .colhit:hover{background:#ffffff08}
+  .jokerbtn:hover:not(:disabled){background:#4a2c28}
+  .startbtn2:hover:not(:disabled){background:#e5b455}
+}
+
+/* ---------- Kompakt läge: smal ELLER låg skärm ----------
+   Låg skärm måste vara med: en telefon i landskap är ~840px bred men bara
+   ~390px hög, och skulle med enbart en max-width-regel få skrivbordets
+   56px-brickor och ett bräde som hamnar utanför skärmen.
+
+   ANVÄND svh, INTE dvh, för brickstorleken. dvh är den *dynamiska* höjden och
+   krymper/växer när mobilens adressfält fälls in och ut – med dvh räknades
+   --tile-size om mitt under scrollen, så bräde och dropzon ändrade storlek
+   medan man scrollade. svh är den stabila "minsta" höjden (adressfältet
+   framme) och ger ett värde som inte hoppar.
+
+   Höjdbudget: 8 brickrader (7 på brädet + dropzonen) plus --chrome för allt
+   annat som konkurrerar om höjden. --chrome skiljer sig mellan layouterna:
+   i landskap ligger korten BREDVID brädet och stjäl ingen höjd, medan de i
+   den staplade mobillayouten gör det (sätts längre ner). Golvet på 26px
+   hindrar oläsbart små brickor på riktigt låga fönster. */
+@media (max-width:700px), (max-height:600px){
+  :root{--chrome:130px}
+  :root{--tile-size:min(12.2vw,48px)} /* fallback utan svh-stöd */
+  :root{--tile-size:max(26px,min(12.2vw,calc((100svh - var(--chrome)) / 8),48px))}
+
+  #root{padding:10px 12px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  header{margin-bottom:8px}
+  .layout{gap:14px}
+  .dropzone{margin-bottom:6px}
+
+  /* Poängkortet blir en kompakt rad: rubrik och de mindre viktiga värdena
+     (språk/läge, valda i startdialogen) döljs för att spara höjd. */
+  .status{display:flex;align-items:center;gap:14px;padding:8px 12px}
+  .status h2{display:none}
+  .status .scorebig{font-size:30px}
+  .status .stats{margin-top:0;display:flex;flex:1;justify-content:space-around;gap:10px}
+  .status .statrow{flex-direction:column;align-items:center;gap:1px;padding:0;font-size:11px;
+    color:var(--muted);text-align:center;line-height:1.25}
+  .status .statrow b{font-size:15px}
+  .status .statrow.secondary{display:none}
+
+  .controls{padding:10px 12px}
+  .controls h2{display:none}
+}
+
+/* ---------- Låg skärm (landskap): tvåkolumners, allt inom en skärm ----------
+   Att stapla vore fel här – med korten över/under brädet blir brickorna
+   pyttesmå. I stället låser vi sidan till skärmhöjden och låter ordlistan
+   ta det som blir över och scrolla internt, så att brädet ALLTID är synligt
+   och inget resizas när man scrollar. */
+@media (max-height:600px){
+  h1{font-size:22px}
+  #root{padding-top:8px;height:100svh}
+  header{margin-bottom:6px}
+
+  .layout{flex:1;min-height:0;gap:10px 18px;grid-template-rows:auto auto minmax(0,1fr)}
+  .status .scorebig{font-size:26px}
+  .words{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  #wordlist{max-height:none;flex:1;min-height:0}
+}
+
+/* ---------- Smal OCH tillräckligt hög skärm: en kolumn ----------
+   Korten staplas i DOM-ordning: status, bräde, kontroller, ordlista.
+   min-height utesluter landskap, som hanteras av blocket ovan. Statusraden
+   och kontrollerna äter höjd här, därav en större --chrome. */
+@media (max-width:700px) and (min-height:601px){
+  :root{--chrome:200px}
+
+  .layout{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"status" "board" "controls" "words";
+    justify-items:center;gap:10px;
+  }
+  .boardwrap,.status,.controls,.words{width:calc(var(--tile-size)*7 + 16px);max-width:100%}
+  #wordlist{max-height:150px}
+}
+
+/* ---------- Träffytor: styrs av pekdonet, inte av skärmbredden ---------- */
+@media (pointer:coarse){
+  /* >=44px är Apples/Googles rekommenderade minsta träffyta.
+     >=16px i fält krävs för att iOS inte ska autozooma vid fokus. */
+  button{padding:10px 14px;min-height:44px}
+  .header-btns button{min-height:40px}
+  input[type=text],input[type=date]{font-size:16px;min-height:44px}
+  .dialog{padding:18px}
+  .jokergrid{grid-template-columns:repeat(5,1fr);gap:8px}
+  .jokergrid button{padding:0;min-height:46px}
 }
