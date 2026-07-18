@@ -32,6 +32,8 @@ npm run dev          # dev-server med HMR (Vite)
 npm run build        # tsc -b && vite build → dist/
 npm run typecheck    # bara TypeScript, ingen emit
 npm run preview      # servera dist/ lokalt (under rätt base-path)
+npm run dev -- --host   # exponera på LAN för test i telefon
+node scripts/make-icons.mjs   # generera om app-ikonerna i public/
 ```
 
 ## 4. Kodkarta (var saker bor)
@@ -45,11 +47,15 @@ src/lib/engine/     Ren spellogik, ingen DOM:
   grid.ts             landingRow, collapseColumn, ensureColPlayable, cellXY, PAD
 src/lib/            dict.ts (fetch + cache), scores.ts (Supabase), sound.ts (WebAudio), types.ts
 src/game/reducer.ts Hela speltillståndet som en REN reducer (state + actions)
-src/hooks/          useGame.ts (reducer-glue, ljud/tangentbord/async start), useTileSize.ts
+src/hooks/          useGame.ts (reducer-glue, ljud/tangentbord/async start)
+                    useTileSize.ts (mäter --tile-size i DOM:en – se §7)
+                    useCoarsePointer.ts (touch vs mus – styr inmatningsidiom)
 src/components/     Header, Board, DropZone, SidePanel, WordList, Overlay,
                     StartDialog, JokerDialog, EndDialog, HighscoreDialog, HighscoreTable
 src/index.css       All global CSS (porterad från originalet)
 public/dict-*.txt   Ordlistor, ett ord per rad (hämtas i runtime)
+public/manifest.webmanifest, icon-*.png, apple-touch-icon.png  (PWA/hemskärm)
+scripts/make-icons.mjs  Genererar ikonerna ur spelets palett (körs manuellt)
 .github/workflows/  deploy.yml (Actions → Pages)
 legacy/index.html   Gamla enfils-versionen (referens)
 ```
@@ -89,6 +95,17 @@ legacy/index.html   Gamla enfils-versionen (referens)
 - **Topplistan kastar fel** vid nätverks-/API-fel (ingen tyst fallback) – felen visas i dialogerna.
 - **React StrictMode** (dev) dubbelkör effekter → ljud/nätverk kan ske två gånger i `npm run dev`.
   Det sker inte i bygget.
+- **`--tile-size` får INTE läsas med `getComputedStyle`.** För en oregistrerad custom property
+  returneras tokensträngen (`"min(12.2vw, 48px)"`), inte px – `parseFloat` gav `NaN`. `useTileSize`
+  mäter därför ett dolt probe-element med `ResizeObserver`. JS och CSS måste vara överens om
+  brickstorleken, annars ritas brädet i en storlek och brickorna placeras i en annan.
+- **Ordlistorna måste vara LF.** `.gitattributes` tvingar `eol=lf`; `dict.ts` delar dessutom på
+  `/\r?\n/`. Med CRLF och en `"\n"`-split får varje ord ett släpande `\r` och *inget* ord utom
+  enbokstavsorden godkänns – en bugg som bara syns lokalt på Windows, eftersom Actions bygger
+  på Linux.
+- **Ljud kräver en användargest.** iOS startar `AudioContext` som `suspended`; våra ljud spelas
+  från `animationend`-callbacks, alltså utanför en gest. `useGame` anropar `unlockAudio()` vid
+  första `pointerdown`/`keydown` – tas det bort blir spelet tyst på iPhone.
 
 ## 8. Externa tjänster – Supabase
 
@@ -104,7 +121,7 @@ legacy/index.html   Gamla enfils-versionen (referens)
 - **GitHub Actions → Pages.** `.github/workflows/deploy.yml` bygger och deployar `dist/` vid push
   till `main`.
 - Engångsinställning i GitHub: **Settings ▸ Pages ▸ Source ▸ GitHub Actions**.
-- Nuvarande arbete sker på grenen `feature/react`; cutover = merge till `main` + byt Pages-källan.
+- React-versionen är sedan tidigare mergad till `main` och är den som ligger live.
 
 ## 10. Konventioner
 
@@ -117,5 +134,9 @@ legacy/index.html   Gamla enfils-versionen (referens)
 
 - StrictMode-dubblering i dev (se §7).
 - CSS skulle kunna delas upp per komponent (CSS Modules) i stället för en global fil.
-- Överväg `.gitattributes` för att tvinga LF (Git varnar om CRLF på Windows).
 - Ingen automatiserad testsvit ännu.
+- **Sidopanelen är inte mobilanpassad** (nästa steg): den hamnar under brädet på smal skärm och
+  visar tangentbordshjälp (`←` `→` `␣` `J`) som är meningslös på touch. Planen är en kompakt
+  statusrad ovanför brädet, joker nära brädet och hopfällbar ordlista.
+- PWA:n saknar service worker → ingen offlinekörning och ingen automatisk installationsprompt i
+  Chrome. Manifest + ikoner finns, så "Lägg till på hemskärmen" fungerar manuellt.

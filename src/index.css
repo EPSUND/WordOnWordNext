@@ -190,21 +190,43 @@ input[type=date]{color-scheme:dark}
   .startbtn2:hover:not(:disabled){background:#e5b455}
 }
 
-/* ---------- Mobil ---------- */
-@media (max-width:700px){
-  /* Brickstorleken klämd mot BÅDE bredd och höjd, så att dropzon + bräde
-     ryms på en skärm utan scroll. Höjdbudget: 8 brickrader (bräde + dropzon)
-     plus ~130px för header, marginaler och padding. */
-  :root{--tile-size:min(12.2vw,48px)}
-  :root{--tile-size:max(30px,min(12.2vw,calc((100dvh - 130px) / 8),48px))}
+/* ---------- Kompakt geometri: smal ELLER låg skärm ----------
+   Låg skärm måste vara med: en telefon i landskap är ~840px bred men bara
+   ~390px hög, och skulle med enbart en max-width-regel få skrivbordets
+   56px-brickor och ett bräde som hamnar utanför skärmen.
+
+   Brickstorleken kläms mot både bredd och höjd så att dropzon + bräde ryms
+   utan scroll. Höjdbudget: 8 brickrader (7 på brädet + dropzonen) plus ~130px
+   för header, marginaler och padding. Golvet på 26px hindrar att brickorna
+   blir oläsbara på riktigt låga fönster – då får man scrolla i stället. */
+@media (max-width:700px), (max-height:600px){
+  :root{--tile-size:min(12.2vw,48px)} /* fallback utan dvh-stöd */
+  :root{--tile-size:max(26px,min(12.2vw,calc((100dvh - 130px) / 8),48px))}
 
   #root{padding:10px 12px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
   header{margin-bottom:8px}
   .layout{gap:14px}
   .dropzone{margin-bottom:6px}
-  .panel{width:calc(var(--tile-size)*7 + 16px)}
+}
 
-  /* Träffytor: minst ~44px och inget iOS-autozoom (kräver >=16px i fält). */
+/* Låg skärm: rubriken äter vertikal plats som brädet behöver bättre. */
+@media (max-height:600px){
+  h1{font-size:22px}
+  #root{padding-top:8px}
+  header{margin-bottom:6px}
+}
+
+/* Smal skärm: panelen får inte tvinga fram sidoscroll, så den läggs under
+   brädet i samma bredd. På låg-men-bred skärm (landskap) får den däremot
+   ligga kvar bredvid brädet i sin vanliga bredd. */
+@media (max-width:700px){
+  .panel{width:calc(var(--tile-size)*7 + 16px)}
+}
+
+/* ---------- Träffytor: styrs av pekdonet, inte av skärmbredden ---------- */
+@media (pointer:coarse){
+  /* >=44px är Apples/Googles rekommenderade minsta träffyta.
+     >=16px i fält krävs för att iOS inte ska autozooma vid fokus. */
   button{padding:10px 14px;min-height:44px}
   .header-btns button{min-height:40px}
   input[type=text],input[type=date]{font-size:16px;min-height:44px}
