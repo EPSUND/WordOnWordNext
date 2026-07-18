@@ -91,7 +91,10 @@ button.primary:hover{background:#e5b455}
 .tile.joker .pts{color:#7c2a22}
 .tile.falling{transition:transform .12s linear}
 .tile.landed{animation:land .18s ease-out}
-@keyframes land{0%{transform:scale(1,.82) translateY(6%)}100%{transform:scale(1,1)}}
+@keyframes land{
+  0%{transform:translate(var(--tx),var(--ty)) scale(1,.82) translateY(6%)}
+  100%{transform:translate(var(--tx),var(--ty)) scale(1,1)}
+}
 .tile.dropfall{animation:fallto var(--fdur,300ms) cubic-bezier(.45,0,1,1) forwards;z-index:20}
 @keyframes fallto{from{transform:translate(var(--fx),var(--fy0))}to{transform:translate(var(--fx),var(--fy1))}}
 

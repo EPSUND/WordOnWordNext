@@ -54,11 +54,16 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
       const [x, y] = cellXY(r, c, t);
       const isJoker = !!state.jokerPos && state.jokerPos[0] === r && state.jokerPos[1] === c;
       const landed = !!state.lastLanded && state.lastLanded[0] === r && state.lastLanded[1] === c;
+      const style = {
+        transform: `translate(${x}px,${y}px)`,
+        // land-animationen behöver positionen som variabler för att inte hoppa till hörnet
+        ...(landed ? { "--tx": `${x}px`, "--ty": `${y}px` } : {}),
+      } as React.CSSProperties;
       tiles.push(
         <div
           key={`t${r}-${c}`}
           className={"tile" + (isJoker ? " joker" : "") + (landed ? " landed" : "")}
-          style={{ transform: `translate(${x}px,${y}px)` }}
+          style={style}
         >
           {L}
           <span className="pts">{pts(lang, L)}</span>
