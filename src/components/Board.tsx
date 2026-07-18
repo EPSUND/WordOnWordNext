@@ -73,11 +73,16 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
       );
     }
 
-  // Ordringar
+  // Ordringar. Insetarna är andelar av brickan, inte fasta px: de gav annars
+  // för trånga ringar på små brickor (landskap). Vågrätt och lodrätt använder
+  // samma värde så att markeringarna ser likadana ut.
+  const ringInset = Math.max(2, t * 0.054); // 3px vid 56px-brickan
+  const singleInset = Math.max(3, t * 0.089); // 5px vid 56px-brickan
+
   const rings: React.ReactNode[] = [];
   state.rowWords.forEach((list, r) =>
     list.forEach((w) => {
-      const inset = 3;
+      const inset = ringInset;
       const [x, y] = cellXY(r, w.a, t);
       const key = `r${r}:${w.word}@${w.a}`;
       rings.push(
@@ -96,7 +101,7 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
   );
   state.colWords.forEach((list, c) =>
     list.forEach((w) => {
-      const inset = 7;
+      const inset = ringInset;
       const [x, y] = cellXY(w.a, c, t);
       const key = `c${c}:${w.word}@${w.a}`;
       rings.push(
@@ -114,7 +119,7 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
     }),
   );
   state.singleWords.forEach((w) => {
-    const inset = 5;
+    const inset = singleInset;
     const [x, y] = cellXY(w.r, w.c, t);
     const key = `s:${w.r},${w.c}`;
     rings.push(

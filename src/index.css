@@ -126,12 +126,17 @@ button.primary{background:var(--ring);border-color:var(--ring);color:#221a08;fon
 
 /* Ordringar – signaturen */
 .ring{
-  position:absolute;pointer-events:none;border-radius:12px;
-  border:3px solid var(--ring);
+  position:absolute;pointer-events:none;
+  /* Skalar med brickan: fasta px gjorde ringen oproportionerligt tjock och
+     trång på små brickor (landskap). Faktorerna ger exakt 3px/12px vid 56px. */
+  border-width:max(2px,calc(var(--tile-size)*.054));
+  border-style:solid;border-color:var(--ring);
+  border-radius:calc(var(--tile-size)*.214);
   box-shadow:0 0 8px #d9a44166,inset 0 0 6px #d9a44133;
 }
 .ring.s{border-radius:50%}
-.ring.v{border-color:var(--ring2);border-style:solid;border-radius:16px}
+/* .ring.v ärver medvetet allt från .ring – lodräta och vågräta ord ska se
+   likadana ut. (Tidigare hade den egen färg, radie och en större inset.) */
 .ring.new{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
 
