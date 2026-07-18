@@ -6,7 +6,9 @@ import type { GameMode } from "./lib/types";
 import Header from "./components/Header";
 import Board from "./components/Board";
 import DropZone from "./components/DropZone";
-import SidePanel from "./components/SidePanel";
+import StatusCard from "./components/StatusCard";
+import ControlsCard from "./components/ControlsCard";
+import WordsCard from "./components/WordsCard";
 import StartDialog from "./components/StartDialog";
 import JokerDialog from "./components/JokerDialog";
 import EndDialog from "./components/EndDialog";
@@ -22,7 +24,11 @@ export default function App() {
     <>
       <Header onOpenHighscores={() => setHsOpen(true)} onNewGame={() => actions.reset()} />
 
+      {/* DOM-ordningen är mobilens läsordning; .layout är ett grid som flyttar
+          korten till en högerkolumn på skrivbord (grid-template-areas). */}
       <div className="layout">
+        <StatusCard state={state} />
+
         <div className="boardwrap">
           <DropZone
             state={state}
@@ -40,7 +46,13 @@ export default function App() {
             onLanded={actions.landed}
           />
         </div>
-        <SidePanel state={state} onUseJoker={actions.useJoker} onFinishArrange={actions.finishArrange} />
+
+        <ControlsCard
+          state={state}
+          onUseJoker={actions.useJoker}
+          onFinishArrange={actions.finishArrange}
+        />
+        <WordsCard state={state} />
       </div>
 
       {state.phase === "idle" && (

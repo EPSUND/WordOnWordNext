@@ -50,7 +50,9 @@ src/game/reducer.ts Hela speltillståndet som en REN reducer (state + actions)
 src/hooks/          useGame.ts (reducer-glue, ljud/tangentbord/async start)
                     useTileSize.ts (mäter --tile-size i DOM:en – se §7)
                     useCoarsePointer.ts (touch vs mus – styr inmatningsidiom)
-src/components/     Header, Board, DropZone, SidePanel, WordList, Overlay,
+src/components/     Header, Board, DropZone, WordList, Overlay,
+                    StatusCard / ControlsCard / WordsCard (gamla SidePanel, uppdelad
+                      så att .layout-griden kan placera dem olika – se §5),
                     StartDialog, JokerDialog, EndDialog, HighscoreDialog, HighscoreTable
 src/index.css       All global CSS (porterad från originalet)
 public/dict-*.txt   Ordlistor, ett ord per rad (hämtas i runtime)
@@ -67,6 +69,9 @@ legacy/index.html   Gamla enfils-versionen (referens)
 - Komponenterna renderar **deklarativt från state**. Sidoeffekter (ljud, tangentbord, async
   ordlisteladdning, Supabase-anrop) ligger i `useGame` och i dialog-komponenterna.
 - Faser: `idle → arrange → play → fall → joker → over`. Overlays visas utifrån `phase`.
+- **`.layout` är ett grid med `grid-template-areas`.** DOM-ordningen är mobilens läsordning
+  (status → bräde → kontroller → ordlista); på skrivbord flyttar griden korten till en
+  högerkolumn. Samma markup i båda lägena – lägg inte till en parallell mobil-DOM.
 - Transienta effekter drivs av räknare/objekt i state: `soundThud`, `soundPling`, `shake`,
   `floatCue`, `newRingKeys`, `freshWordIds`, `lastLanded`.
 - Den fallande brickan animeras med CSS (`@keyframes fallto`); `onAnimationEnd` → `landed`-action
@@ -135,8 +140,7 @@ legacy/index.html   Gamla enfils-versionen (referens)
 - StrictMode-dubblering i dev (se §7).
 - CSS skulle kunna delas upp per komponent (CSS Modules) i stället för en global fil.
 - Ingen automatiserad testsvit ännu.
-- **Sidopanelen är inte mobilanpassad** (nästa steg): den hamnar under brädet på smal skärm och
-  visar tangentbordshjälp (`←` `→` `␣` `J`) som är meningslös på touch. Planen är en kompakt
-  statusrad ovanför brädet, joker nära brädet och hopfällbar ordlista.
 - PWA:n saknar service worker → ingen offlinekörning och ingen automatisk installationsprompt i
   Chrome. Manifest + ikoner finns, så "Lägg till på hemskärmen" fungerar manuellt.
+- På mobil döljs språk och läge i statusraden (de väljs ändå i startdialogen). Ordlistan är inte
+  hopfällbar utan bara höjdbegränsad och scrollbar.

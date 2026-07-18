@@ -49,7 +49,22 @@ button{
 button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
 button.primary{background:var(--ring);border-color:var(--ring);color:#221a08;font-weight:600}
 
-.layout{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;max-width:920px}
+/* Grid i stället för flex: korten ligger i mobilens läsordning i DOM:en och
+   flyttas hit till en högerkolumn på skrivbord, utan dubblerad markup. */
+.layout{
+  display:grid;
+  grid-template-columns:auto 250px;
+  grid-template-areas:
+    "board status"
+    "board controls"
+    "board words";
+  align-items:start;justify-content:center;
+  gap:14px 22px;width:100%;max-width:920px;
+}
+.boardwrap{grid-area:board}
+.status{grid-area:status}
+.controls{grid-area:controls}
+.words{grid-area:words}
 
 /* ---------- Brädet ---------- */
 .boardwrap{position:relative}
@@ -120,11 +135,11 @@ button.primary{background:var(--ring);border-color:var(--ring);color:#221a08;fon
 }
 @keyframes floatup{0%{opacity:0;transform:translateY(6px)}15%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}
 
-/* ---------- Sidopanel ---------- */
-.panel{width:250px;display:flex;flex-direction:column;gap:14px}
+/* ---------- Sidokort ---------- */
 .card{background:#20302a;border:1px solid #33493e;border-radius:12px;padding:12px 14px}
 .scorebig{font-family:Georgia,serif;font-size:40px;font-weight:700;color:var(--tile1);line-height:1}
 .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);font-weight:600;margin-bottom:6px}
+.stats{margin-top:8px} /* ersätter den inline-stil som låg i gamla SidePanel */
 .statrow{display:flex;justify-content:space-between;font-size:14px;color:var(--text);padding:2px 0}
 .statrow b{color:var(--tile1)}
 .nextwrap{display:flex;align-items:center;gap:12px}
@@ -195,13 +210,16 @@ input[type=date]{color-scheme:dark}
    ~390px hög, och skulle med enbart en max-width-regel få skrivbordets
    56px-brickor och ett bräde som hamnar utanför skärmen.
 
-   Brickstorleken kläms mot både bredd och höjd så att dropzon + bräde ryms
-   utan scroll. Höjdbudget: 8 brickrader (7 på brädet + dropzonen) plus ~130px
-   för header, marginaler och padding. Golvet på 26px hindrar att brickorna
-   blir oläsbara på riktigt låga fönster – då får man scrolla i stället. */
+   Brickstorleken kläms mot både bredd och höjd så att brädet ryms utan scroll.
+   Höjdbudget: 8 brickrader (7 på brädet + dropzonen) plus --chrome för allt
+   annat som konkurrerar om höjden. --chrome skiljer sig mellan layouterna:
+   i landskap ligger korten BREDVID brädet och stjäl ingen höjd, medan de i
+   den staplade mobillayouten gör det (sätts längre ner). Golvet på 26px
+   hindrar oläsbart små brickor på riktigt låga fönster – då får man scrolla. */
 @media (max-width:700px), (max-height:600px){
+  :root{--chrome:130px}
   :root{--tile-size:min(12.2vw,48px)} /* fallback utan dvh-stöd */
-  :root{--tile-size:max(26px,min(12.2vw,calc((100dvh - 130px) / 8),48px))}
+  :root{--tile-size:max(26px,min(12.2vw,calc((100dvh - var(--chrome)) / 8),48px))}
 
   #root{padding:10px 12px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
   header{margin-bottom:8px}
@@ -209,18 +227,43 @@ input[type=date]{color-scheme:dark}
   .dropzone{margin-bottom:6px}
 }
 
-/* Låg skärm: rubriken äter vertikal plats som brädet behöver bättre. */
+/* Låg skärm: rubriken äter vertikal plats som brädet behöver bättre, och
+   ordlistan kortas så att högerkolumnen inte blir mycket högre än brädet. */
 @media (max-height:600px){
   h1{font-size:22px}
   #root{padding-top:8px}
   header{margin-bottom:6px}
+  #wordlist{max-height:120px}
 }
 
-/* Smal skärm: panelen får inte tvinga fram sidoscroll, så den läggs under
-   brädet i samma bredd. På låg-men-bred skärm (landskap) får den däremot
-   ligga kvar bredvid brädet i sin vanliga bredd. */
+/* ---------- Smal skärm: en kolumn ----------
+   Korten staplas i DOM-ordning: status, bräde, kontroller, ordlista.
+   Statusraden och kontrollerna ligger då över/under brädet och äter höjd,
+   därav en större --chrome än i landskapsläget ovan. */
 @media (max-width:700px){
-  .panel{width:calc(var(--tile-size)*7 + 16px)}
+  :root{--chrome:200px}
+
+  .layout{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"status" "board" "controls" "words";
+    justify-items:center;gap:10px;
+  }
+  .boardwrap,.status,.controls,.words{width:calc(var(--tile-size)*7 + 16px);max-width:100%}
+
+  /* Poängkortet blir en kompakt rad: rubrik och de mindre viktiga värdena
+     (språk/läge, valda i startdialogen) döljs för att spara höjd. */
+  .status{display:flex;align-items:center;gap:14px;padding:8px 12px}
+  .status h2{display:none}
+  .status .scorebig{font-size:30px}
+  .status .stats{margin-top:0;display:flex;flex:1;justify-content:space-around;gap:10px}
+  .status .statrow{flex-direction:column;align-items:center;gap:1px;padding:0;font-size:11px;
+    color:var(--muted);text-align:center;line-height:1.25}
+  .status .statrow b{font-size:15px}
+  .status .statrow.secondary{display:none}
+
+  .controls{padding:10px 12px}
+  .controls h2{display:none}
+  #wordlist{max-height:150px}
 }
 
 /* ---------- Träffytor: styrs av pekdonet, inte av skärmbredden ---------- */
