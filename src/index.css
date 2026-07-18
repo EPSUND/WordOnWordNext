@@ -105,8 +105,13 @@ button.primary{background:var(--ring);border-color:var(--ring);color:#221a08;fon
   pointer-events:none;
 }
 .tile .pts{
-  position:absolute;right:5px;bottom:2px;
-  font-family:system-ui,sans-serif;font-size:11px;font-weight:600;color:#7a6a4d;
+  position:absolute;
+  /* Måste skala med brickan, annars blir siffran nästan lika stor som
+     bokstaven på små brickor (landskap) och skymmer den. Faktorerna är valda
+     så att 56px-brickan får exakt samma 11px/5px/2px som tidigare. */
+  right:calc(var(--tile-size)*.09);bottom:calc(var(--tile-size)*.04);
+  font-family:system-ui,sans-serif;font-weight:600;color:#7a6a4d;
+  font-size:clamp(7px,calc(var(--tile-size)*.196),11px);line-height:1;
 }
 .tile.joker{background:linear-gradient(160deg,#e8a29b,#d2766c);border-color:#a03d33;box-shadow:0 3px 0 #8c352c,0 4px 8px #0006}
 .tile.joker .pts{color:#7c2a22}
