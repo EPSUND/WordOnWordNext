@@ -1,5 +1,4 @@
-﻿/* English word list for Ord på Ord – one word per line. Data, no game logic. */
-window.DICT_EN = `A
+A
 AA
 AAH
 AAHED
@@ -51928,4 +51927,4 @@ ZYMOSES
 ZYMOSIS
 ZYMOTIC
 ZYMURGY
-ZYZZYVA`;
+ZYZZYVA

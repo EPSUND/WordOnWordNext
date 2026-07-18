@@ -1,5 +1,4 @@
-﻿/* Svensk ordlista för Ord på Ord – ett ord per rad. Data, ingen spellogik. */
-window.DICT_SV = `ABAKUS
+ABAKUS
 ABANDON
 ABBORR
 ABBORRE
@@ -71073,4 +71072,4 @@ ZYGOTS
 ÖVRIGE
 ÖVRIGT
 ÖVÄRLD
-ÖVÄRLDS`;
+ÖVÄRLDS
