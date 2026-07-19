@@ -5,10 +5,17 @@ interface Props {
   state: GameState;
   onUseJoker: () => void;
   onFinishArrange: () => void;
+  /** Sätts bara när slutdialogen har stängts, så resultatet går att ta fram igen. */
+  onShowResult?: () => void;
 }
 
 /** Nästa bricka, hjälptext och spelknappar. På mobil direkt under brädet. */
-export default function ControlsCard({ state, onUseJoker, onFinishArrange }: Props) {
+export default function ControlsCard({
+  state,
+  onUseJoker,
+  onFinishArrange,
+  onShowResult,
+}: Props) {
   const coarse = useCoarsePointer();
   const handLeft = state.startHand.filter((h) => h.r == null).length;
   const nextTile = state.phase === "arrange" ? "–" : state.nextLetter || "–";
@@ -26,22 +33,28 @@ export default function ControlsCard({ state, onUseJoker, onFinishArrange }: Pro
 
   return (
     <div className="card controls">
-      <h2>Nästa bricka</h2>
-      <div className="nextwrap">
-        <div className="minitile">{nextTile}</div>
-        <div className="hint">
-          {coarse ? (
-            "Tryck på en kolumn för att släppa brickan."
-          ) : (
-            <>
-              Flytta med <kbd>←</kbd>
-              <kbd>→</kbd> eller musen.
-              <br />
-              Släpp med <kbd>␣</kbd>/<kbd>↓</kbd> eller klick.
-            </>
-          )}
-        </div>
-      </div>
+      {/* Efter spelets slut är brädet kvar att titta på, men "nästa bricka"
+          och spelinstruktionen är inte längre relevanta. */}
+      {state.phase !== "over" && (
+        <>
+          <h2>Nästa bricka</h2>
+          <div className="nextwrap">
+            <div className="minitile">{nextTile}</div>
+            <div className="hint">
+              {coarse ? (
+                "Tryck på en kolumn för att släppa brickan."
+              ) : (
+                <>
+                  Flytta med <kbd>←</kbd>
+                  <kbd>→</kbd> eller musen.
+                  <br />
+                  Släpp med <kbd>␣</kbd>/<kbd>↓</kbd> eller klick.
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
       {state.phase === "arrange" && (
         <div className="prepnote">
           {handLeft > 0
@@ -54,9 +67,14 @@ export default function ControlsCard({ state, onUseJoker, onFinishArrange }: Pro
           Börja spela ▶
         </button>
       )}
-      {!jokerHidden && (
+      {state.phase !== "over" && !jokerHidden && (
         <button className="jokerbtn" disabled={jokerDisabled} onClick={onUseJoker}>
           🃏 Använd joker {!coarse && <kbd>J</kbd>}
+        </button>
+      )}
+      {state.phase === "over" && onShowResult && (
+        <button className="startbtn2" onClick={onShowResult}>
+          Visa resultat
         </button>
       )}
     </div>

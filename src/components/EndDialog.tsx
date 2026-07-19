@@ -12,11 +12,27 @@ interface Props {
   mode: GameMode;
   dailyDate: string | null;
   onAgain: () => void;
+  onClose: () => void;
+  /* saved ligger i App och inte här, eftersom dialogen kan stängas och öppnas
+     igen – annars hade namnformuläret kommit tillbaka och man hade kunnat
+     spara samma resultat till topplistan flera gånger. */
+  saved: boolean;
+  onSaved: () => void;
 }
 
-export default function EndDialog({ score, numWords, bestWord, lang, mode, dailyDate, onAgain }: Props) {
+export default function EndDialog({
+  score,
+  numWords,
+  bestWord,
+  lang,
+  mode,
+  dailyDate,
+  onAgain,
+  onClose,
+  saved,
+  onSaved,
+}: Props) {
   const [name, setName] = useState("");
-  const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [entries, setEntries] = useState<ScoreEntry[] | null>(null);
@@ -48,7 +64,7 @@ export default function EndDialog({ score, numWords, bestWord, lang, mode, daily
       setSaving(false);
       return;
     }
-    setSaved(true);
+    onSaved();
     try {
       const list = await loadForMode(mode, dailyDate, lang);
       const sorted = [...list].sort((a, b) => b.score - a.score);
@@ -116,6 +132,11 @@ export default function EndDialog({ score, numWords, bestWord, lang, mode, daily
       </div>
 
       <div className="btnrow" style={{ marginTop: 16 }}>
+        {/* Stäng låter spelaren se på det färdiga brädet i stället för att
+            tvingas starta om direkt. Nytt spel startas från huvudvyn. */}
+        <button style={{ flex: 1 }} onClick={onClose}>
+          Stäng
+        </button>
         <button className="primary" style={{ flex: 1 }} onClick={onAgain}>
           Spela igen
         </button>
