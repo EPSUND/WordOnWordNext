@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGame } from "./hooks/useGame";
 import { useTileSize } from "./hooks/useTileSize";
 import { TOTAL_BLOCKS } from "./lib/engine/constants";
@@ -19,6 +19,17 @@ export default function App() {
   const tile = useTileSize();
   const [startMode, setStartMode] = useState<GameMode>("random");
   const [hsOpen, setHsOpen] = useState(false);
+  const [endClosed, setEndClosed] = useState(false);
+  const [scoreSaved, setScoreSaved] = useState(false);
+
+  // Nollställ slutdialogens tillstånd så fort ett nytt spel börjar. Täcker
+  // alla vägar ut ur "over" (Spela igen, Nytt spel) på ett ställe.
+  useEffect(() => {
+    if (state.phase !== "over") {
+      setEndClosed(false);
+      setScoreSaved(false);
+    }
+  }, [state.phase]);
 
   return (
     <>
@@ -51,6 +62,7 @@ export default function App() {
           state={state}
           onUseJoker={actions.useJoker}
           onFinishArrange={actions.finishArrange}
+          onShowResult={endClosed ? () => setEndClosed(false) : undefined}
         />
         <WordsCard state={state} />
       </div>
@@ -76,7 +88,7 @@ export default function App() {
         />
       )}
 
-      {state.phase === "over" && (
+      {state.phase === "over" && !endClosed && (
         <EndDialog
           score={state.score}
           numWords={state.numWords}
@@ -85,6 +97,9 @@ export default function App() {
           mode={state.mode}
           dailyDate={state.dailyDate}
           onAgain={() => start(state.mode)}
+          onClose={() => setEndClosed(true)}
+          saved={scoreSaved}
+          onSaved={() => setScoreSaved(true)}
         />
       )}
 
