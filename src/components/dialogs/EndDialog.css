@@ -1,0 +1,4 @@
+/* Slutresultatets siffror. Dialogchromet ligger i Overlay.css. */
+.final{display:flex;gap:18px;margin:8px 0 14px}
+.final div b{display:block;font-family:Georgia,serif;font-size:30px;color:var(--tile1)}
+.final div{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}

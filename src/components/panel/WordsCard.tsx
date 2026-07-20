@@ -1,4 +1,4 @@
-import type { GameState } from "../game/reducer";
+import type { GameState } from "../../game/reducer";
 import WordList from "./WordList";
 
 interface Props {

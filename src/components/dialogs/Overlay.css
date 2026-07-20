@@ -1,0 +1,37 @@
+/* ---------- Overlays och dialogchrome ----------
+   Här ligger även det som *alla* dialoger delar (knapp- och språkrader,
+   felmeddelanden, textfält). Dialogspecifika delar bor hos sin egen dialog. */
+
+.overlay{
+  position:fixed;inset:0;background:#0c1512cc;backdrop-filter:blur(3px);
+  display:flex;justify-content:center;z-index:100;padding:16px;
+  /* align-items:center + overflow klipper toppen på dialoger som är högre än
+     skärmen, och den delen går då inte att scrolla fram (märks i landskap,
+     där topplistan är högre än de ~390px som finns). flex-start + margin:auto
+     på dialogen centrerar när den får plats och klipper aldrig när den inte gör det. */
+  align-items:flex-start;overflow-y:auto;overscroll-behavior:contain;
+  padding-bottom:max(16px,env(safe-area-inset-bottom));
+}
+.dialog{background:#22362e;border:1px solid #3d5a4d;border-radius:14px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 60px #000a;margin:auto}
+.dialog h2{font-family:Georgia,serif;font-size:24px;color:var(--tile1);margin-bottom:10px;letter-spacing:.03em}
+.dialog p{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+
+/* Delas av StartDialog och HighscoreDialog (.langrow) resp. alla dialoger (.btnrow). */
+.langrow,.btnrow{display:flex;gap:10px;margin-top:10px}
+.langrow button{flex:1}
+.langrow button.sel{background:var(--ring);color:#221a08;border-color:var(--ring);font-weight:600}
+
+/* Delas av StartDialog, EndDialog och HighscoreTable. */
+.hserror{color:var(--lingon);font-size:13px;margin-top:8px;line-height:1.4;font-weight:600}
+
+input[type=text],input[type=date]{
+  font:inherit;background:#182620;color:var(--text);
+  border:1px solid #3d5a4d;border-radius:8px;padding:8px 10px;width:100%;
+}
+input[type=date]{color-scheme:dark}
+
+@media (pointer:coarse){
+  /* >=16px i fält krävs för att iOS inte ska autozooma vid fokus. */
+  input[type=text],input[type=date]{font-size:16px;min-height:44px}
+  .dialog{padding:18px}
+}

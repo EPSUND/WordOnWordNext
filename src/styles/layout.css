@@ -1,0 +1,48 @@
+/* ---------- Sidlayout ----------
+   Grid i stället för flex: korten ligger i mobilens läsordning i DOM:en och
+   flyttas hit till en högerkolumn på skrivbord, utan dubblerad markup.
+   Ligger globalt eftersom reglerna placerar flera komponenter mot varandra –
+   ingen enskild komponent äger dem. */
+
+.layout{
+  display:grid;
+  grid-template-columns:auto 250px;
+  grid-template-areas:
+    "board status"
+    "board controls"
+    "board words";
+  align-items:start;justify-content:center;
+  gap:14px 22px;width:100%;max-width:920px;
+}
+.boardwrap{grid-area:board}
+.status{grid-area:status}
+.controls{grid-area:controls}
+.words{grid-area:words}
+
+@media (max-width:700px), (max-height:600px){
+  .layout{gap:14px}
+}
+
+/* ---------- Låg skärm (landskap): tvåkolumners, allt inom en skärm ----------
+   Att stapla vore fel här – med korten över/under brädet blir brickorna
+   pyttesmå. I stället låter vi ordlistan ta det som blir över och scrolla
+   internt (se WordList.css), så att brädet ALLTID är synligt. */
+@media (max-height:600px){
+  .layout{flex:1;min-height:0;gap:10px 18px;grid-template-rows:auto auto minmax(0,1fr)}
+  .words{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+}
+
+/* ---------- Smal OCH tillräckligt hög skärm: en kolumn ----------
+   Korten staplas i DOM-ordning: status, bräde, kontroller, ordlista.
+   min-height utesluter landskap, som hanteras av blocket ovan. Statusraden
+   och kontrollerna äter höjd här, därav en större --chrome. */
+@media (max-width:700px) and (min-height:601px){
+  :root{--chrome:200px}
+
+  .layout{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"status" "board" "controls" "words";
+    justify-items:center;gap:10px;
+  }
+  .boardwrap,.status,.controls,.words{width:calc(var(--tile-size)*7 + 16px);max-width:100%}
+}

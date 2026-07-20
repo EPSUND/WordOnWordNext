@@ -1,4 +1,5 @@
-import type { GameState } from "../game/reducer";
+import type { GameState } from "../../game/reducer";
+import "./WordList.css";
 
 export default function WordList({ state }: { state: GameState }) {
   const sorted = [...state.listedWords].sort((a, b) => b.score - a.score);

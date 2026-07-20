@@ -1,0 +1,11 @@
+/* Dropzonen ovanför brädet. Brickorna i den stylas av .tile i Board.css. */
+.dropzone{
+  position:relative;height:calc(var(--tile-size) + 14px);
+  width:calc(var(--tile-size)*7 + 16px);
+  margin-bottom:8px;border:2px dashed #3d5a4d;border-radius:10px;
+  background:var(--dropzone);
+}
+
+@media (max-width:700px), (max-height:600px){
+  .dropzone{margin-bottom:6px}
+}

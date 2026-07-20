@@ -1,0 +1,101 @@
+/* ---------- Bas: variabler, reset, elementstilar och delade byggstenar ----------
+   Laddas före all komponent-CSS. Här ligger bara det som mer än en komponent
+   använder; hör en regel till exakt en komponent bor den i komponentens fil. */
+
+:root{
+  --bg:#182420;
+  --bg2:#101a17;
+  --board:#22362e;
+  --cellline:#2e463c;
+  --dropzone:#1c2c26;
+  --tile1:#f5ebd7;
+  --tile2:#e7d6b4;
+  --ink:#33261a;
+  --ring:#d9a441;
+  --ring2:#a97c2c;
+  --lingon:#b8453c;
+  --text:#e8e2d4;
+  --muted:#9aa89d;
+  --tile-size:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:radial-gradient(1200px 700px at 50% -100px,#213730 0%,var(--bg) 55%,var(--bg2) 100%);
+  color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  min-height:100vh;
+  /* svh, inte dvh: dvh ändras när adressfältet fälls in/ut under scroll och
+     får layouten att hoppa. svh är den stabila minsta höjden. */
+  min-height:100svh;
+  /* Stänger av dubbeltryck-zoom och dess ~300ms klickfördröjning. */
+  touch-action:manipulation;
+  -webkit-text-size-adjust:100%;
+}
+#root{
+  min-height:100vh;
+  min-height:100svh; /* se body ovan */
+  display:flex;flex-direction:column;align-items:center;
+  padding:18px 14px 40px;
+  padding-left:max(14px,env(safe-area-inset-left));
+  padding-right:max(14px,env(safe-area-inset-right));
+}
+
+button{
+  font:inherit;color:var(--text);background:#2b423880;
+  border:1px solid #3d5a4d;border-radius:8px;padding:7px 14px;cursor:pointer;
+}
+button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+button.primary{background:var(--ring);border-color:var(--ring);color:#221a08;font-weight:600}
+kbd{background:#31463c;border:1px solid #46604f;border-radius:4px;padding:0 5px;font-size:11px}
+
+/* Delade sidokort: StatusCard, ControlsCard och WordsCard. */
+.card{background:#20302a;border:1px solid #33493e;border-radius:12px;padding:12px 14px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);font-weight:600;margin-bottom:6px}
+
+/* Delad animation: används av .ring.new (Board) och #wordlist li.new (WordList).
+   Därför här och inte i någon av dem. */
+@keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* ---------- Hovring: bara för mus/styrplatta ----------
+   På touch "fastnar" :hover efter ett tryck tills man rör något annat.
+   Komponenternas egna hover-regler ligger i respektive fil, bakom samma media. */
+@media (hover:hover){
+  button:hover{background:#35513f}
+  button.primary:hover{background:#e5b455}
+}
+
+/* ---------- Brickstorleken i kompakt läge: smal ELLER låg skärm ----------
+   Låg skärm måste vara med: en telefon i landskap är ~840px bred men bara
+   ~390px hög, och skulle med enbart en max-width-regel få skrivbordets
+   56px-brickor och ett bräde som hamnar utanför skärmen.
+
+   ANVÄND svh, INTE dvh, för brickstorleken. dvh är den *dynamiska* höjden och
+   krymper/växer när mobilens adressfält fälls in och ut – med dvh räknades
+   --tile-size om mitt under scrollen, så bräde och dropzon ändrade storlek
+   medan man scrollade. svh är den stabila "minsta" höjden (adressfältet
+   framme) och ger ett värde som inte hoppar.
+
+   Höjdbudget: 8 brickrader (7 på brädet + dropzonen) plus --chrome för allt
+   annat som konkurrerar om höjden. --chrome skiljer sig mellan layouterna:
+   i landskap ligger korten BREDVID brädet och stjäl ingen höjd, medan de i
+   den staplade mobillayouten gör det (sätts i layout.css). Golvet på 26px
+   hindrar oläsbart små brickor på riktigt låga fönster. */
+@media (max-width:700px), (max-height:600px){
+  :root{--chrome:130px}
+  :root{--tile-size:min(12.2vw,48px)} /* fallback utan svh-stöd */
+  :root{--tile-size:max(26px,min(12.2vw,calc((100svh - var(--chrome)) / 8),48px))}
+
+  #root{padding:10px 12px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+}
+
+/* Landskap: lås sidan till skärmhöjden så att inget resizas när man scrollar. */
+@media (max-height:600px){
+  #root{padding-top:8px;height:100svh}
+}
+
+/* ---------- Träffytor: styrs av pekdonet, inte av skärmbredden ---------- */
+@media (pointer:coarse){
+  /* >=44px är Apples/Googles rekommenderade minsta träffyta. */
+  button{padding:10px 14px;min-height:44px}
+}

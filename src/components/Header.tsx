@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isSoundOn, toggleSound } from "../lib/sound";
+import "./Header.css";
 
 interface Props {
   onOpenHighscores: () => void;

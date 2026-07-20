@@ -47,9 +47,9 @@ src/
   lib/             dict (word lists), scores (Supabase), sound, types
   game/reducer.ts  All game state as a pure reducer / state machine
   hooks/           useGame (glue + effects), useTileSize
-  components/      UI, driven declaratively from state
+  components/      UI, driven declaratively from state, grouped by function:
+                     board/ (grid + tray), panel/ (side cards), dialogs/
 public/            dict-sv.txt / dict-en.txt (word lists)
-legacy/            The original single-file version, kept for reference
 ```
 
 ### Key components

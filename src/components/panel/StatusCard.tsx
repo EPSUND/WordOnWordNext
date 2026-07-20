@@ -1,5 +1,6 @@
-import type { GameState } from "../game/reducer";
-import { TOTAL_BLOCKS } from "../lib/engine/constants";
+import type { GameState } from "../../game/reducer";
+import { TOTAL_BLOCKS } from "../../lib/engine/constants";
+import "./StatusCard.css";
 
 interface Props {
   state: GameState;

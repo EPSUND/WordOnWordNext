@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import type { GameState } from "../game/reducer";
-import { COLS, VALUES } from "../lib/engine/constants";
-import { PAD } from "../lib/engine/grid";
-import { useCoarsePointer } from "../hooks/useCoarsePointer";
+import type { GameState } from "../../game/reducer";
+import { COLS, VALUES } from "../../lib/engine/constants";
+import { PAD } from "../../lib/engine/grid";
+import { useCoarsePointer } from "../../hooks/useCoarsePointer";
+import "./DropZone.css";
 
 interface Props {
   state: GameState;

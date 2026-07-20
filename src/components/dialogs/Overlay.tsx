@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "./Overlay.css";
 
 export default function Overlay({ children }: { children: ReactNode }) {
   return (

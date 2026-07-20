@@ -1,6 +1,7 @@
-import type { Lang } from "../lib/types";
-import { ALPHABET } from "../lib/engine/constants";
+import type { Lang } from "../../lib/types";
+import { ALPHABET } from "../../lib/engine/constants";
 import Overlay from "./Overlay";
+import "./JokerDialog.css";
 
 interface Props {
   forced: boolean;

@@ -1,4 +1,5 @@
-import type { ScoreEntry } from "../lib/types";
+import type { ScoreEntry } from "../../lib/types";
+import "./HighscoreTable.css";
 
 interface Props {
   entries: ScoreEntry[] | null;

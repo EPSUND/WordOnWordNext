@@ -1,0 +1,4 @@
+.hstable{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+.hstable td,.hstable th{padding:4px 6px;text-align:left;border-bottom:1px solid #33493e}
+.hstable td:last-child,.hstable th:last-child{text-align:right}
+.hstable tr.me td{color:var(--ring);font-weight:600}

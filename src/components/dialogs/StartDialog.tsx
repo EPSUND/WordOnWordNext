@@ -1,4 +1,4 @@
-import type { GameMode, Lang } from "../lib/types";
+import type { GameMode, Lang } from "../../lib/types";
 import Overlay from "./Overlay";
 
 interface Props {

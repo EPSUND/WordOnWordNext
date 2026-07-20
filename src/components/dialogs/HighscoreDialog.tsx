@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import type { GameMode, Lang, ScoreEntry } from "../lib/types";
-import { loadDailyScores, loadScores } from "../lib/scores";
-import { todayStr } from "../lib/engine/rng";
+import type { GameMode, Lang, ScoreEntry } from "../../lib/types";
+import { loadDailyScores, loadScores } from "../../lib/scores";
+import { todayStr } from "../../lib/engine/rng";
 import HighscoreTable from "./HighscoreTable";
 import Overlay from "./Overlay";
 

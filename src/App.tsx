@@ -4,15 +4,15 @@ import { useTileSize } from "./hooks/useTileSize";
 import { TOTAL_BLOCKS } from "./lib/engine/constants";
 import type { GameMode } from "./lib/types";
 import Header from "./components/Header";
-import Board from "./components/Board";
-import DropZone from "./components/DropZone";
-import StatusCard from "./components/StatusCard";
-import ControlsCard from "./components/ControlsCard";
-import WordsCard from "./components/WordsCard";
-import StartDialog from "./components/StartDialog";
-import JokerDialog from "./components/JokerDialog";
-import EndDialog from "./components/EndDialog";
-import HighscoreDialog from "./components/HighscoreDialog";
+import Board from "./components/board/Board";
+import DropZone from "./components/board/DropZone";
+import StatusCard from "./components/panel/StatusCard";
+import ControlsCard from "./components/panel/ControlsCard";
+import WordsCard from "./components/panel/WordsCard";
+import StartDialog from "./components/dialogs/StartDialog";
+import JokerDialog from "./components/dialogs/JokerDialog";
+import EndDialog from "./components/dialogs/EndDialog";
+import HighscoreDialog from "./components/dialogs/HighscoreDialog";
 
 export default function App() {
   const { state, start, starting, startError, actions } = useGame();

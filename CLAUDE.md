@@ -21,8 +21,8 @@ Live: https://epsund.github.io/WordOnWordNext/
 
 - **React 18 + TypeScript + Vite**, byggs till en statisk sajt på **GitHub Pages**.
 - **Supabase** (REST) för topplistan. Inget eget backend.
-- Migreringsnot: repot porterades från en enda `index.html`. Den gamla versionen ligger kvar
-  i `legacy/index.html` som referens – React-versionen är den aktiva.
+- Migreringsnot: repot porterades från en enda `index.html`. Den gamla versionen är borttagen
+  (commit c940799) och finns bara i git-historiken.
 
 ## 3. Kommandon
 
@@ -50,16 +50,24 @@ src/game/reducer.ts Hela speltillståndet som en REN reducer (state + actions)
 src/hooks/          useGame.ts (reducer-glue, ljud/tangentbord/async start)
                     useTileSize.ts (mäter --tile-size i DOM:en – se §7)
                     useCoarsePointer.ts (touch vs mus – styr inmatningsidiom)
-src/components/     Header, Board, DropZone, WordList, Overlay,
-                    StatusCard / ControlsCard / WordsCard (gamla SidePanel, uppdelad
-                      så att .layout-griden kan placera dem olika – se §5),
-                    StartDialog, JokerDialog, EndDialog, HighscoreDialog, HighscoreTable
-src/index.css       All global CSS (porterad från originalet)
+src/components/     Grupperade efter funktion. Foo.css bredvid Foo.tsx, importerad
+                    därifrån – se §5.
+  Header.tsx          Titelrad + knappar (hör inte till någon grupp)
+  board/              Board, DropZone – brädytan. Delar .tile-CSS:en, som bor i
+                        Board.css (DropZone.css förutsätter den)
+  panel/              StatusCard, ControlsCard, WordsCard + WordList – de tre korten
+                        (gamla SidePanel, uppdelad så att .layout-griden kan placera
+                        dem olika – se §5)
+  dialogs/            Overlay (chrome + det dialogerna delar) och
+                        StartDialog, JokerDialog, EndDialog, HighscoreDialog,
+                        HighscoreTable
+src/index.css       Laddar bara basen (@import styles/*)
+src/styles/base.css   Variabler, reset, element- och .card-regler
+src/styles/layout.css .layout-griden och kortens placering
 public/dict-*.txt   Ordlistor, ett ord per rad (hämtas i runtime)
 public/manifest.webmanifest, icon-*.png, apple-touch-icon.png  (PWA/hemskärm)
 scripts/make-icons.mjs  Genererar ikonerna ur spelets palett (körs manuellt)
 .github/workflows/  deploy.yml (Actions → Pages)
-legacy/index.html   Gamla enfils-versionen (referens)
 ```
 
 ## 5. Arkitektur & dataflöde
@@ -72,6 +80,15 @@ legacy/index.html   Gamla enfils-versionen (referens)
 - **`.layout` är ett grid med `grid-template-areas`.** DOM-ordningen är mobilens läsordning
   (status → bräde → kontroller → ordlista); på skrivbord flyttar griden korten till en
   högerkolumn. Samma markup i båda lägena – lägg inte till en parallell mobil-DOM.
+- **CSS ligger per komponent**: `Foo.css` bredvid `Foo.tsx` och importeras av den. Klassnamnen
+  är fortfarande *globala* (inte CSS Modules), och det är ett medvetet val: flera selektorer
+  delas över komponentgränserna (`.tile` av Board och DropZone, `.card` av de tre korten,
+  `.langrow`/`.btnrow`/`.hserror` av dialogerna, `@keyframes pop` av Board och WordList), och
+  `--tile-size` måste ligga i `:root`. Med moduler hade allt det behövt `:global`/`composes`,
+  alltså mer maskineri än det som finns nu – inte mindre. Regler som
+  spänner över flera komponenter bor i `src/styles/`. **Varje komponents media queries ligger i
+  komponentens egen fil**, sist i filen, så att kaskaden är korrekt inom filen och ordningen
+  mellan filer inte spelar roll.
 - Transienta effekter drivs av räknare/objekt i state: `soundThud`, `soundPling`, `shake`,
   `floatCue`, `newRingKeys`, `freshWordIds`, `lastLanded`.
 - Den fallande brickan animeras med CSS (`@keyframes fallto`); `onAnimationEnd` → `landed`-action
@@ -92,7 +109,8 @@ legacy/index.html   Gamla enfils-versionen (referens)
 - **DETERMINISM.** Dagligt läge seedar `mulberry32(hashSeed("wow-daily-" + datum))` och drar
   bokstäver ur `FREQ` i **insättningsordning**. `rng.ts`, `bag.ts`, `FREQ`-nyckelordningen och
   seed-strängen måste förbli **byte-identiska** – annars ändras dagens brickor och redan sparade
-  dagliga topplistor blir ojämförbara. (Verifierat: React-motorn ger samma påse som legacy.)
+  dagliga topplistor blir ojämförbara. (Verifierat vid porten: React-motorn gav samma påse som
+  den gamla enfilsversionen, se git-historiken före c940799.)
 - **Base-path.** `vite.config.ts` har `base: '/WordOnWordNext/'` (projektsajt, inte roten). Alla
   runtime-hämtningar (ordlistor) går via `import.meta.env.BASE_URL`. Fel bas = blank sida på Pages.
 - **Supabase-nyckeln** (`SUPA_KEY` i `scores.ts`) är en *publicerbar* nyckel och ligger avsiktligt
@@ -111,6 +129,9 @@ legacy/index.html   Gamla enfils-versionen (referens)
   `/\r?\n/`. Med CRLF och en `"\n"`-split får varje ord ett släpande `\r` och *inget* ord utom
   enbokstavsorden godkänns – en bugg som bara syns lokalt på Windows, eftersom Actions bygger
   på Linux.
+- **`index.css` måste importeras före `App` i `main.tsx`.** Vite emitterar CSS i modulernas
+  evalueringsordning. Kastas de två raderna om hamnar komponent-CSS:en före basen, och basens
+  `.card`/`button`-regler skriver över komponenternas (samma specificitet – ordningen avgör).
 - **Ljud kräver en användargest.** iOS startar `AudioContext` som `suspended`; våra ljud spelas
   från `animationend`-callbacks, alltså utanför en gest. `useGame` anropar `unlockAudio()` vid
   första `pointerdown`/`keydown` – tas det bort blir spelet tyst på iPhone.
@@ -136,12 +157,13 @@ legacy/index.html   Gamla enfils-versionen (referens)
 - **Svenska** i UI-text och kodkommentarer.
 - TypeScript `strict` (inkl. `noUnusedLocals`/`noUnusedParameters`).
 - **Trogen port**: bevara originalets beteende och utseende om inte ändring uttryckligen efterfrågas.
-- All CSS är global i `src/index.css` (samma selektorer som originalet).
+- CSS är uppdelad per komponent men med **globala klassnamn** (samma selektorer som originalet).
+  Nya regler läggs i komponentens egen `.css`; bara det som verkligen delas hör hemma i
+  `src/styles/`.
 
 ## 11. Kända begränsningar / TODO
 
 - StrictMode-dubblering i dev (se §7).
-- CSS skulle kunna delas upp per komponent (CSS Modules) i stället för en global fil.
 - Ingen automatiserad testsvit ännu.
 - PWA:n saknar service worker → ingen offlinekörning och ingen automatisk installationsprompt i
   Chrome. Manifest + ikoner finns, så "Lägg till på hemskärmen" fungerar manuellt.

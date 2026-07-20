@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import type { GameMode, Lang, ScoreEntry } from "../lib/types";
-import { loadForMode, submitScore } from "../lib/scores";
+import type { GameMode, Lang, ScoreEntry } from "../../lib/types";
+import { loadForMode, submitScore } from "../../lib/scores";
 import HighscoreTable from "./HighscoreTable";
 import Overlay from "./Overlay";
+import "./EndDialog.css";
 
 interface Props {
   score: number;

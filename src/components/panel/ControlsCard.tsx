@@ -1,5 +1,6 @@
-import type { GameState } from "../game/reducer";
-import { useCoarsePointer } from "../hooks/useCoarsePointer";
+import type { GameState } from "../../game/reducer";
+import { useCoarsePointer } from "../../hooks/useCoarsePointer";
+import "./ControlsCard.css";
 
 interface Props {
   state: GameState;

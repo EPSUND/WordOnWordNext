@@ -1,0 +1,21 @@
+/* Poängkortet. Basen .card ligger i styles/base.css. */
+.scorebig{font-family:Georgia,serif;font-size:40px;font-weight:700;color:var(--tile1);line-height:1}
+.stats{margin-top:8px} /* ersätter den inline-stil som låg i gamla SidePanel */
+.statrow{display:flex;justify-content:space-between;font-size:14px;color:var(--text);padding:2px 0}
+.statrow b{color:var(--tile1)}
+
+/* Kompakt läge: kortet blir en rad, rubriken och de mindre viktiga värdena
+   (språk/läge, valda i startdialogen) döljs för att spara höjd. */
+@media (max-width:700px), (max-height:600px){
+  .status{display:flex;align-items:center;gap:14px;padding:8px 12px}
+  .status h2{display:none}
+  .status .scorebig{font-size:30px}
+  .status .stats{margin-top:0;display:flex;flex:1;justify-content:space-around;gap:10px}
+  .status .statrow{flex-direction:column;align-items:center;gap:1px;padding:0;font-size:11px;
+    color:var(--muted);text-align:center;line-height:1.25}
+  .status .statrow b{font-size:15px}
+  .status .statrow.secondary{display:none}
+}
+@media (max-height:600px){
+  .status .scorebig{font-size:26px}
+}

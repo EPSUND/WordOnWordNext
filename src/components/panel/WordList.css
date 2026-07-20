@@ -1,0 +1,14 @@
+/* Ordlistan. Kortet runt den (.words) placeras av styles/layout.css. */
+#wordlist{list-style:none;max-height:190px;overflow-y:auto;font-size:14px}
+#wordlist li{display:flex;justify-content:space-between;padding:3px 2px;border-bottom:1px dashed #33493e}
+#wordlist li span:last-child{color:var(--ring);font-weight:600}
+#wordlist li.new{animation:pop .4s ease-out;color:var(--tile1)} /* @keyframes pop: base.css */
+
+/* Landskap: listan tar det som blir över och scrollar internt, så att brädet
+   alltid ryms på skärmen. */
+@media (max-height:600px){
+  #wordlist{max-height:none;flex:1;min-height:0}
+}
+@media (max-width:700px) and (min-height:601px){
+  #wordlist{max-height:150px}
+}
