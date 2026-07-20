@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2021",
-    "useDefineForClassFields": true,
-    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -14,12 +13,12 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    "types": ["node", "vite/client"],
+
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
-  // Testerna typkollas av tsconfig.test.json – de behöver node-typer och ES2023.
-  "exclude": ["src/**/*.test.ts", "src/test"]
+  "include": ["src/**/*.test.ts", "src/test", "vitest.config.ts"]
 }

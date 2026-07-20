@@ -31,6 +31,8 @@ npm install          # installera beroenden
 npm run dev          # dev-server med HMR (Vite)
 npm run build        # tsc -b && vite build → dist/
 npm run typecheck    # bara TypeScript, ingen emit
+npm test             # kör testsviten en gång (Vitest)
+npm run test:watch   # Vitest i watch-läge
 npm run preview      # servera dist/ lokalt (under rätt base-path)
 npm run dev -- --host   # exponera på LAN för test i telefon
 node scripts/make-icons.mjs   # generera om app-ikonerna i public/
@@ -67,7 +69,9 @@ src/styles/layout.css .layout-griden och kortens placering
 public/dict-*.txt   Ordlistor, ett ord per rad (hämtas i runtime)
 public/manifest.webmanifest, icon-*.png, apple-touch-icon.png  (PWA/hemskärm)
 scripts/make-icons.mjs  Genererar ikonerna ur spelets palett (körs manuellt)
-.github/workflows/  deploy.yml (Actions → Pages)
+.github/workflows/  deploy.yml (Actions → Pages; kör npm test före bygget)
+src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i tester
+*.test.ts           Ligger bredvid koden de testar – se §12
 ```
 
 ## 5. Arkitektur & dataflöde
@@ -110,7 +114,8 @@ scripts/make-icons.mjs  Genererar ikonerna ur spelets palett (körs manuellt)
   bokstäver ur `FREQ` i **insättningsordning**. `rng.ts`, `bag.ts`, `FREQ`-nyckelordningen och
   seed-strängen måste förbli **byte-identiska** – annars ändras dagens brickor och redan sparade
   dagliga topplistor blir ojämförbara. (Verifierat vid porten: React-motorn gav samma påse som
-  den gamla enfilsversionen, se git-historiken före c940799.)
+  den gamla enfilsversionen, se git-historiken före c940799.) Numera bevakat av golden-testerna i
+  `src/lib/engine/determinism.test.ts` – se §12.
 - **Base-path.** `vite.config.ts` har `base: '/WordOnWordNext/'` (projektsajt, inte roten). Alla
   runtime-hämtningar (ordlistor) går via `import.meta.env.BASE_URL`. Fel bas = blank sida på Pages.
 - **Supabase-nyckeln** (`SUPA_KEY` i `scores.ts`) är en *publicerbar* nyckel och ligger avsiktligt
@@ -164,8 +169,32 @@ scripts/make-icons.mjs  Genererar ikonerna ur spelets palett (körs manuellt)
 ## 11. Kända begränsningar / TODO
 
 - StrictMode-dubblering i dev (se §7).
-- Ingen automatiserad testsvit ännu.
+- Testsviten täcker motor, reducer och lib – **inga komponenttester** (se §12).
 - PWA:n saknar service worker → ingen offlinekörning och ingen automatisk installationsprompt i
   Chrome. Manifest + ikoner finns, så "Lägg till på hemskärmen" fungerar manuellt.
 - På mobil döljs språk och läge i statusraden (de väljs ändå i startdialogen). Ordlistan är inte
   hopfällbar utan bara höjdbegränsad och scrollbar.
+
+## 12. Tester
+
+- **Vitest**, node-miljö (ingen jsdom). Testfilerna ligger bredvid koden: `src/**/*.test.ts`.
+- Typkollas av **`tsconfig.test.json`** (ES2023 + node-typer); `tsconfig.app.json` exkluderar dem
+  så att appens tsconfig kan förbli browser-riktad. Båda körs av `tsc -b`.
+- Vad som täcks:
+  - `determinism.test.ts` – **golden-test för de dagliga påsarna.** Låser hashSeed, mulberry32,
+    FREQ-ordningen och `makeBag`-utfallet för kända datum. **Uppdatera aldrig de förväntade
+    värdena för att få grönt** – om de går sönder har §7-invarianten brutits och redan sparade
+    dagliga topplistor blir ojämförbara. Återställ koden i stället.
+  - `words.test.ts` – poängformeln, DP:n för bästa orden per linje, enbokstavsorden.
+  - `grid.test.ts` – gravitation, kolumnkollaps, pixelmappning.
+  - `reducer.test.ts` – hela fasflödet `arrange → play → fall → joker → over`, inklusive
+    guard-fallen (ingen ändring i fel fas) och att jokern bara går att använda en gång.
+  - `dict.test.ts` – parsning, cache, och **regressionsspärren mot CRLF** (§7).
+  - `scores.test.ts` – Supabase-URL:er, kolumnalias, POST-body och att fel kastas (ingen tyst
+    fallback). Inga riktiga nätverksanrop; `fetch` stubbas.
+- **Riktiga ordlistor i testerna.** `src/test/dictFixture.ts` läser `public/dict-*.txt` från disk
+  och matar dem genom `loadDict`, så ordlisteparsningen körs på riktigt. Använder man påhittade
+  ord i ett test: verifiera först att de faktiskt finns i ordlistan (t.ex. `DOG` finns även på
+  svenska).
+- Komponenter/hooks testas inte – de skulle kräva jsdom och testing-library. Logiken de renderar
+  ligger redan i reducern, som är täckt.
