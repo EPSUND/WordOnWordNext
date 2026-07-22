@@ -12,7 +12,7 @@
     "board controls"
     "board words";
   align-items:start;justify-content:center;
-  gap:14px 22px;width:100%;max-width:920px;
+  gap:14px 22px;width:min(100%,var(--content-w));
 }
 .boardwrap{grid-area:board}
 .status{grid-area:status}

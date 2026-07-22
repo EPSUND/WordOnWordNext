@@ -17,6 +17,11 @@
   --text:#e8e2d4;
   --muted:#9aa89d;
   --tile-size:56px;
+  /* Rutnätets faktiska innehållsbredd: bräde (tile*7 + 16px padding) +
+     kolumngap (22px) + panel (250px). Header och .layout delar den så att
+     rubrik/knappar linjerar med brädet resp. sidopanelen i stället för att
+     spänna över en bredare centrerad container. */
+  --content-w:calc(var(--tile-size)*7 + 16px + 22px + 250px);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}

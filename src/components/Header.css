@@ -1,4 +1,4 @@
-header{width:100%;max-width:920px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+header{width:min(100%,var(--content-w));display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 h1{
   font-family:Georgia,"Iowan Old Style","Times New Roman",serif;
   font-weight:700;font-size:clamp(26px,4.5vw,38px);
@@ -9,6 +9,13 @@ h1 .pa{color:var(--ring);font-style:italic;letter-spacing:.02em}
 
 @media (max-width:700px), (max-height:600px){
   header{margin-bottom:8px}
+}
+/* Stapel­läge (smal, tillräckligt hög): headern får samma bredd som brädet och
+   korten (se layout.css) och centreras av #root, så att rubrik och toppknappar
+   linjerar med statuspanelen och rutnätet i stället för att spänna över hela
+   bredden. Landskaps­läget hanteras av regeln ovan (två­kolumners, --content-w). */
+@media (max-width:700px) and (min-height:601px){
+  header{width:calc(var(--tile-size)*7 + 16px);max-width:100%}
 }
 @media (max-height:600px){
   h1{font-size:22px}
