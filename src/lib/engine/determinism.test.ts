@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { hashSeed, mulberry32, todayStr } from "./rng";
 import { makeBag, sampleLetter } from "./bag";
-import { FREQ, TOTAL_BLOCKS, VOWELS } from "./constants";
+import { FREQ, MAX_RUN, TOTAL_BLOCKS, VOWELS } from "./constants";
 
 /* SPÄRR MOT REGRESSION. Dagligt läge seedar mulberry32 på datumet, så alla spelare
-   ska få samma brickor. Ändras rng.ts, bag.ts, FREQ-nyckelordningen eller
-   seed-strängen blir redan sparade dagliga topplistor ojämförbara – då ska de här
-   testerna gå sönder. Uppdatera INTE värdena för att "få grönt"; återställ koden. */
+   ska få samma brickor. Ändras rng.ts, bag.ts, FREQ-nyckelordningen, påsens
+   trim-konstanter eller seed-strängen blir dagens brickor andra – då ska
+   golden-testerna nedan gå sönder. Uppdatera INTE värdena för att "få grönt";
+   återställ koden. (Byter man medvetet påsalgoritmen måste värdena regenereras –
+   det är ofarligt eftersom bara dagens dagliga spel är spelbart, se CLAUDE.md §7.) */
 
 const dailySeed = (date: string) => mulberry32(hashSeed("wow-daily-" + date));
 
@@ -84,10 +86,10 @@ describe("sampleLetter", () => {
 
 describe("makeBag – dagliga påsar (golden)", () => {
   const golden: Record<string, string> = {
-    "sv/2024-01-01": "LABDSEAYTANAIANSKÅROSVSNPBLÄLUFDRSSJAKHABKFEÖEMS",
-    "en/2024-01-01": "LEHUSIEKREOETEOSNFATSMSOGHLBLPYDASSVENWEHNYIYICS",
-    "sv/2026-07-20": "BVSREOYJIONYTKRPNIGEIARORLLERITTTFTDAAOEJILALSRE",
-    "en/2026-07-20": "HMSAIDKVTTLKRNAGOTUITEATALLIATRRRYRDEETIVNLELSAI",
+    "sv/2024-01-01": "BÅJIPASEMTASUNIRDELADASÄGBEKORALTOSUGENÅKROTILAJ",
+    "en/2024-01-01": "BUWIHESAMLESONOSGATEPESUGFACIREDLIROGATYDRONITEV",
+    "sv/2026-07-20": "GOMABOGASJYTENÄJTANALIREPDITÄSIDTERYLURERVÅNANOF",
+    "en/2026-07-20": "GIMEFUGESVULADOZNENETOREHPALOSIGLARYTORARHYDENIK",
   };
 
   for (const [key, expected] of Object.entries(golden)) {
@@ -100,16 +102,60 @@ describe("makeBag – dagliga påsar (golden)", () => {
   it("ger samma påse vid två anrop med samma datum", () => {
     expect(makeBag("sv", dailySeed("2025-03-14"))).toEqual(makeBag("sv", dailySeed("2025-03-14")));
   });
+});
 
-  it("ger TOTAL_BLOCKS brickor med vokalandel 0.32–0.48", () => {
-    for (const lang of ["sv", "en"] as const) {
-      for (let i = 0; i < 50; i++) {
-        const bag = makeBag(lang, mulberry32(i));
+/** Räknar längsta löpa av antingen vokaler eller konsonanter i följd. */
+function longestGroupRun(bag: string[], lang: "sv" | "en"): number {
+  let max = 1;
+  let run = 1;
+  for (let i = 1; i < bag.length; i++) {
+    const same = VOWELS[lang].includes(bag[i]) === VOWELS[lang].includes(bag[i - 1]);
+    run = same ? run + 1 : 1;
+    if (run > max) max = run;
+  }
+  return max;
+}
+
+describe("makeBag – fördelningsinvarianter (§6/§7)", () => {
+  const langs = ["sv", "en"] as const;
+  const bags = (lang: "sv" | "en") =>
+    Array.from({ length: 300 }, (_, i) => makeBag(lang, mulberry32(i * 2654435761)));
+
+  it("ger alltid TOTAL_BLOCKS brickor med vokalandel i ett rimligt band", () => {
+    for (const lang of langs)
+      for (const bag of bags(lang)) {
         expect(bag).toHaveLength(TOTAL_BLOCKS);
         const v = bag.filter((c) => VOWELS[lang].includes(c)).length / bag.length;
         expect(v).toBeGreaterThanOrEqual(0.32);
         expect(v).toBeLessThanOrEqual(0.48);
       }
+  });
+
+  it("klustrar aldrig fler än MAX_RUN vokaler/konsonanter i rad", () => {
+    for (const lang of langs)
+      for (const bag of bags(lang)) expect(longestGroupRun(bag, lang)).toBeLessThanOrEqual(MAX_RUN);
+  });
+
+  it("upprepar aldrig samma bokstav fler än MAX_RUN gånger i rad", () => {
+    for (const lang of langs)
+      for (const bag of bags(lang))
+        for (let i = MAX_RUN; i < bag.length; i++) {
+          const window = bag.slice(i - MAX_RUN, i + 1);
+          expect(new Set(window).size).toBeGreaterThan(1);
+        }
+  });
+
+  it("håller extrem överrepresentation sällsynt (mjuk dämpning, ingen hård gräns)", () => {
+    // Ovanliga/mellanfrekventa bokstäver (förväntat ≤3 per påse) ska sällan nå ≥5.
+    // Gamla i.i.d.-algoritmen gjorde det i ~34 % (sv)/~53 % (en) av påsarna.
+    for (const lang of langs) {
+      const sample = bags(lang);
+      const flagged = sample.filter((bag) => {
+        const counts = new Map<string, number>();
+        for (const c of bag) counts.set(c, (counts.get(c) ?? 0) + 1);
+        return [...counts].some(([c, n]) => (FREQ[lang][c] ?? 0) * TOTAL_BLOCKS <= 3 && n >= 5);
+      });
+      expect(flagged.length / sample.length).toBeLessThan(0.15);
     }
   });
 });

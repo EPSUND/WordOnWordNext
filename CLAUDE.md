@@ -42,9 +42,10 @@ node scripts/make-icons.mjs   # generera om app-ikonerna i public/
 
 ```
 src/lib/engine/     Ren spellogik, ingen DOM:
-  constants.ts        COLS/ROWS=7, TOTAL_BLOCKS=48, INITIAL_BLOCKS=5, FREQ, VALUES, SINGLES, VOWELS, ALPHABET
+  constants.ts        COLS/ROWS=7, TOTAL_BLOCKS=48, INITIAL_BLOCKS=5, FREQ, VALUES, SINGLES, VOWELS,
+                        ALPHABET + påsens trim-konstanter (VOWEL_TARGET/JITTER, REPEAT_DECAY, ALLOWANCE_FACTOR, MAX_RUN)
   rng.ts              todayStr, hashSeed, mulberry32  (determinism – se §7)
-  bag.ts              sampleLetter, makeBag (tar lang + rng)
+  bag.ts              makeBag (grupperad, mjukt dämpad, interfolierad – se §6), sampleLetter
   words.ts            wordScore, isValidWord, bestWordsInLine (DP), scanLine, computeSingles, scoreAndCount
   grid.ts             landingRow, collapseColumn, ensureColPlayable, cellXY, PAD
 src/lib/            dict.ts (fetch + cache), scores.ts (Supabase), sound.ts (WebAudio), types.ts
@@ -107,15 +108,31 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
   ett annat ord.
 - **Arrangeringsfasen**: klick placerar vald bricka på nedersta lediga ruta i kolumnen; klick på
   placerad bricka plockar upp den och kolumnen faller ihop (inga luckor).
+- **Bokstavsfördelning i påsen** (`bag.ts` → `makeBag`): ska vara *språkligt rimlig* (ovanliga
+  bokstäver ovanliga) men *tillfredsställande* – man ska sällan få väldigt många av samma bokstav
+  och vokaler/konsonanter ska inte klustras. Tre steg, allt deterministiskt givet `rng`:
+  1. **Målantal vokaler** ≈ `VOWEL_TARGET·48` ± `VOWEL_JITTER` (så antalet varierar mellan matcher).
+  2. **Mjukt dämpad dragning** per grupp (vokaler/konsonanter var för sig, viktat efter `FREQ`):
+     varje bokstav dras fritt upp till sin "rimliga andel" (≈ förväntat antal · `ALLOWANCE_FACTOR`),
+     därefter avtar vikten geometriskt (`REPEAT_DECAY`) per extra kopia. **Ingen hård gräns** –
+     bara allt osannolikare, och mer så ju ovanligare bokstaven är (medvetet val: en fast gräns
+     kändes förutsägbar; "5 A" ska vara rimligt, "5 L" osannolikt men inte omöjligt).
+  3. **Interfoliering**: väver samman grupperna så aldrig fler än `MAX_RUN` vokaler/konsonanter (och
+     aldrig fler än `MAX_RUN` av samma bokstav) hamnar i rad. Detta gör också starthanden spelbar.
+  Trim-konstanterna valdes empiriskt (analysskript, 20 000 påsar/språk). Ändra dem inte utan att
+  köra om analysen och regenerera golden-testerna (§7/§12).
 
 ## 7. Kritiska invarianter / fallgropar (läs innan du ändrar)
 
 - **DETERMINISM.** Dagligt läge seedar `mulberry32(hashSeed("wow-daily-" + datum))` och drar
-  bokstäver ur `FREQ` i **insättningsordning**. `rng.ts`, `bag.ts`, `FREQ`-nyckelordningen och
-  seed-strängen måste förbli **byte-identiska** – annars ändras dagens brickor och redan sparade
-  dagliga topplistor blir ojämförbara. (Verifierat vid porten: React-motorn gav samma påse som
-  den gamla enfilsversionen, se git-historiken före c940799.) Numera bevakat av golden-testerna i
-  `src/lib/engine/determinism.test.ts` – se §12.
+  bokstäver ur `FREQ` i **insättningsordning**. `rng.ts`, `bag.ts`, `FREQ`-nyckelordningen,
+  påsens trim-konstanter och seed-strängen avgör tillsammans dagens brickor; **rör dem inte av
+  misstag** – alla som spelar en viss dag måste få samma påse. Golden-testerna i
+  `src/lib/engine/determinism.test.ts` bevakar detta (se §12).
+  En *medveten* ändring av påsalgoritmen är däremot ofarlig: daglig-seeden bygger på `todayStr()`,
+  så man kan bara spela **dagens** dagliga spel (äldre datum är enbart visningsbara i topplistan).
+  Från utrullningen och framåt får alltså alla samma nya påse. Regenerera då golden-strängarna
+  (enda kantfallet är en utrullning mitt på dagen – två kohorter den dagen; försumbart).
 - **Base-path.** `vite.config.ts` har `base: '/WordOnWordNext/'` (projektsajt, inte roten). Alla
   runtime-hämtningar (ordlistor) går via `import.meta.env.BASE_URL`. Fel bas = blank sida på Pages.
 - **Supabase-nyckeln** (`SUPA_KEY` i `scores.ts`) är en *publicerbar* nyckel och ligger avsiktligt
@@ -181,10 +198,11 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
 - Typkollas av **`tsconfig.test.json`** (ES2023 + node-typer); `tsconfig.app.json` exkluderar dem
   så att appens tsconfig kan förbli browser-riktad. Båda körs av `tsc -b`.
 - Vad som täcks:
-  - `determinism.test.ts` – **golden-test för de dagliga påsarna.** Låser hashSeed, mulberry32,
-    FREQ-ordningen och `makeBag`-utfallet för kända datum. **Uppdatera aldrig de förväntade
-    värdena för att få grönt** – om de går sönder har §7-invarianten brutits och redan sparade
-    dagliga topplistor blir ojämförbara. Återställ koden i stället.
+  - `determinism.test.ts` – **golden-test för de dagliga påsarna** (låser hashSeed, mulberry32 och
+    `makeBag`-utfallet för kända datum) plus **fördelningsinvarianter** (längd, vokalband, inga
+    kluster > `MAX_RUN`, sällsynt överrepresentation). **Uppdatera aldrig golden-värdena bara för
+    att få grönt** vid en oavsiktlig ändring – då har §7 brutits, återställ koden. Vid en *medveten*
+    ändring av påsalgoritmen ska de regenereras (ofarligt, se §7) och analysskriptet köras om.
   - `words.test.ts` – poängformeln, DP:n för bästa orden per linje, enbokstavsorden.
   - `grid.test.ts` – gravitation, kolumnkollaps, pixelmappning.
   - `reducer.test.ts` – hela fasflödet `arrange → play → fall → joker → over`, inklusive
