@@ -14,12 +14,16 @@
 .jokerbtn{width:100%;margin-top:12px;background:#3a2320;border-color:#a03d33;color:#e8a29b;font-weight:600}
 .jokerbtn:disabled{opacity:.4;cursor:not-allowed}
 .jokerbtn kbd{background:#5a2f2a;border-color:#a03d33}
+.undobtn{width:100%;margin-top:8px;background:#22303a;border-color:#3d7ca0;color:#9bc7e8;font-weight:600}
+.undobtn:disabled{opacity:.4;cursor:not-allowed}
+.undobtn kbd{background:#2a4a5a;border-color:#3d7ca0}
 .startbtn2{width:100%;margin-top:12px;background:var(--ring);border-color:var(--ring);color:#221a08;font-weight:700}
 .startbtn2:disabled{opacity:.4;cursor:not-allowed}
 .prepnote{margin-top:10px;font-size:12.5px;color:var(--ring);font-weight:600;line-height:1.4}
 
 @media (hover:hover){
   .jokerbtn:hover:not(:disabled){background:#4a2c28}
+  .undobtn:hover:not(:disabled){background:#2b3d4a}
   .startbtn2:hover:not(:disabled){background:#e5b455}
 }
 @media (max-width:700px), (max-height:600px){

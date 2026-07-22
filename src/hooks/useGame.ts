@@ -56,6 +56,9 @@ export function useGame() {
       } else if (e.key === "j" || e.key === "J") {
         dispatch({ type: "useJoker" });
         e.preventDefault();
+      } else if (e.key === "z" || e.key === "Z") {
+        dispatch({ type: "undo" });
+        e.preventDefault();
       } else if (/^[1-7]$/.test(e.key)) {
         dispatch({ type: "setCol", c: +e.key - 1 });
       }
@@ -92,6 +95,7 @@ export function useGame() {
       drop: () => dispatch({ type: "drop" }),
       landed: () => dispatch({ type: "landed" }),
       useJoker: () => dispatch({ type: "useJoker" }),
+      undo: () => dispatch({ type: "undo" }),
       chooseJoker: (letter: string) => dispatch({ type: "chooseJoker", letter }),
       selectHand: (i: number) => dispatch({ type: "selectHand", i }),
       arrangeClick: (r: number, c: number) => dispatch({ type: "arrangeClick", r, c }),

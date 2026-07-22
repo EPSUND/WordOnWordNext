@@ -309,6 +309,70 @@ describe("spelets slut", () => {
   });
 });
 
+describe("undo", () => {
+  it("kan inte ångra innan ett drag har gjorts", () => {
+    const play = toPlay(started());
+    expect(play.undoSnapshot).toBeNull();
+    expect(reducer(play, { type: "undo" })).toBe(play);
+  });
+
+  it("återställer play-läget precis före det senaste släppet", () => {
+    // Distinkta brickor efter starthanden (bag[5]=O, bag[6]=S) så serveringen syns.
+    const play = toPlay(started(bag("K", "A", "T", "T", "B", "O", "S")));
+    const after = dropIn(play, 6);
+    expect(after.grid[ROWS - 1][6]).toBe(play.currentLetter);
+    expect(after.currentLetter).not.toBe(play.currentLetter); // ny bricka serverad
+
+    const undone = reducer(after, { type: "undo" });
+    expect(undone.phase).toBe("play");
+    expect(undone.grid[ROWS - 1][6]).toBeNull(); // brickan borta från brädet
+    expect(undone.currentLetter).toBe(play.currentLetter); // tillbaka i dropzonen
+    expect(undone.nextLetter).toBe(play.nextLetter); // gamla nästa-brickan igen
+    expect(undone.bagIndex).toBe(play.bagIndex);
+    expect(undone.score).toBe(play.score);
+    expect(undone.undoUsed).toBe(true);
+    expect(undone.undoSnapshot).toBeNull();
+  });
+
+  it("återställer poäng och ordlista när det ångrade draget bildade ett ord", () => {
+    const play = toPlay(started(bag("S", "A", "B", "C", "D", "O")), [0, 1, 2, 3, 4]);
+    const after = dropIn(play, 0); // bildar OS
+    expect(after.listedWords.map((w) => w.word)).toContain("OS");
+    const undone = reducer(after, { type: "undo" });
+    expect(undone.listedWords.map((w) => w.word)).not.toContain("OS");
+    expect(undone.score).toBe(play.score);
+    expect(undone.numWords).toBe(play.numWords);
+  });
+
+  it("går bara att ångra en gång per spelomgång", () => {
+    const play = toPlay(started());
+    const after = dropIn(play, 6);
+    const undone = reducer(after, { type: "undo" });
+    expect(undone.undoUsed).toBe(true);
+
+    // Nästa släpp får inte spara någon ny ögonblicksbild.
+    const next = dropIn(undone, 5);
+    expect(next.undoSnapshot).toBeNull();
+    expect(reducer(next, { type: "undo" })).toBe(next);
+  });
+
+  it("återutlöser inte ljud eller skak vid ångra", () => {
+    const play = toPlay(started());
+    const after = dropIn(play, 6);
+    const undone = reducer(after, { type: "undo" });
+    expect(undone.soundThud).toBe(after.soundThud);
+    expect(undone.soundPling).toBe(after.soundPling);
+    expect(undone.shake).toBe(after.shake);
+  });
+
+  it("gör ingenting utanför play-fasen", () => {
+    const play = toPlay(started());
+    const after = dropIn(play, 6);
+    const falling = { ...after, phase: "fall" as const };
+    expect(reducer(falling, { type: "undo" })).toBe(falling);
+  });
+});
+
 describe("reset", () => {
   it("nollställer allt men behåller språk och läge", () => {
     const played = dropIn(toPlay(started()), 6);

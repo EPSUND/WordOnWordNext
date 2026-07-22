@@ -57,6 +57,12 @@ export interface GameState {
   soundPling: number;
   soundPlingLen: number;
   shake: number;
+  /** Ögonblicksbild av play-läget precis före det senaste släppet, för Ångra drag.
+   *  null tills ett drag gjorts. Se "undo" nedan. */
+  undoSnapshot: GameState | null;
+  /** Ångra får bara användas en gång per spelomgång (annars kan man tjuvkika på
+   *  nästa bricka genom att släppa och ångra om och om igen). */
+  undoUsed: boolean;
 }
 
 export type Action =
@@ -70,6 +76,7 @@ export type Action =
   | { type: "landed" }
   | { type: "useJoker" }
   | { type: "chooseJoker"; letter: string }
+  | { type: "undo" }
   | { type: "reset" };
 
 const makeLines = (n: number): LineWord[][] => Array.from({ length: n }, () => []);
@@ -108,6 +115,8 @@ export const initialState: GameState = {
   soundPling: 0,
   soundPlingLen: 0,
   shake: 0,
+  undoSnapshot: null,
+  undoUsed: false,
 };
 
 let floatSeq = 0;
@@ -321,8 +330,13 @@ export function reducer(s: GameState, a: Action): GameState {
       if (s.phase !== "play" || s.currentLetter == null) return s;
       const row = landingRow(s.grid, s.currentCol);
       if (row < 0) return { ...s, shake: s.shake + 1 };
+      // Spara play-läget precis före släppet så att "undo" kan återställa det. Bara
+      // meningsfullt medan ångra fortfarande finns kvar; snapshoten hålls platt
+      // (egen undoSnapshot nollad) så den inte kapslar in tidigare drag.
+      const undoSnapshot = s.undoUsed ? s.undoSnapshot : { ...s, undoSnapshot: null };
       return {
         ...s,
+        undoSnapshot,
         phase: "fall",
         falling: { letter: s.currentLetter, col: s.currentCol, row, joker: s.isJokerTile },
       };
@@ -358,6 +372,25 @@ export function reducer(s: GameState, a: Action): GameState {
         phase: "play",
         nextLetter,
         currentCol: ensureColPlayable(s.grid, s.currentCol),
+      };
+    }
+
+    case "undo": {
+      // Bara i play-läget, bara om ett drag finns att ångra och ångra inte redan använts.
+      if (s.phase !== "play" || !s.undoSnapshot || s.undoUsed) return s;
+      return {
+        ...s.undoSnapshot,
+        undoUsed: true,
+        undoSnapshot: null,
+        // Behåll de monotona ljud-/skakräknarna så inga effekter återutlöses.
+        soundThud: s.soundThud,
+        soundPling: s.soundPling,
+        soundPlingLen: s.soundPlingLen,
+        shake: s.shake,
+        // Rensa transienta markeringar så brädet inte återanimerar gamla ord.
+        floatCue: null,
+        newRingKeys: new Set(),
+        freshWordIds: new Set(),
       };
     }
 

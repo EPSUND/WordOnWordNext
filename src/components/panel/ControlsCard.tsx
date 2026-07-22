@@ -5,6 +5,7 @@ import "./ControlsCard.css";
 interface Props {
   state: GameState;
   onUseJoker: () => void;
+  onUndo: () => void;
   onFinishArrange: () => void;
   /** Sätts bara när slutdialogen har stängts, så resultatet går att ta fram igen. */
   onShowResult?: () => void;
@@ -14,6 +15,7 @@ interface Props {
 export default function ControlsCard({
   state,
   onUseJoker,
+  onUndo,
   onFinishArrange,
   onShowResult,
 }: Props) {
@@ -28,6 +30,10 @@ export default function ControlsCard({
     state.currentLetter != null &&
     !state.isJokerTile
   );
+
+  // Ångra göms när det förbrukats; annars aktivt så snart ett drag finns att ångra.
+  const undoHidden = state.undoUsed;
+  const undoDisabled = !(state.phase === "play" && state.undoSnapshot != null);
 
   // Verbet skiljer sig: på touch trycker man, med mus klickar man.
   const verb = coarse ? "Tryck" : "Klicka";
@@ -79,6 +85,11 @@ export default function ControlsCard({
       {state.phase !== "over" && !jokerHidden && (
         <button className="jokerbtn" disabled={jokerDisabled} onClick={onUseJoker}>
           🃏 Använd joker {!coarse && <kbd>J</kbd>}
+        </button>
+      )}
+      {state.phase !== "over" && !undoHidden && (
+        <button className="undobtn" disabled={undoDisabled} onClick={onUndo}>
+          ↩︎ Ångra drag {!coarse && <kbd>Z</kbd>}
         </button>
       )}
       {state.phase === "over" && onShowResult && (

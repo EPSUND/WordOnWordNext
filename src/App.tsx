@@ -61,6 +61,7 @@ export default function App() {
         <ControlsCard
           state={state}
           onUseJoker={actions.useJoker}
+          onUndo={actions.undo}
           onFinishArrange={actions.finishArrange}
           onShowResult={endClosed ? () => setEndClosed(false) : undefined}
         />
