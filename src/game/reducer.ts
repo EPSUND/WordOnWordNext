@@ -7,6 +7,9 @@ export interface WordItem {
   word: string;
   score: number;
   id: number;
+  /** Stabil identitet (orientering + linje + ord + startposition) så att ett ord som
+   *  ligger kvar mellan turer behåller sitt id och inte markeras som färskt på nytt. */
+  key: string;
 }
 export interface FloatCue {
   r: number;
@@ -118,6 +121,40 @@ function fullRescan(lang: Lang, grid: Grid) {
   return { rowWords, colWords, singleWords, score, numWords };
 }
 
+/** Bygger om listan över de *aktiva* (just nu poänggivande) orden ur skanningen.
+ *  Ord som fanns kvar sedan förra turen behåller sitt id via sin positionsnyckel;
+ *  nya ord får nytt id och markeras som färska. Ord som byggts ut till ett längre
+ *  ord (eller på annat sätt inte längre är aktiva) faller bort. */
+function relist(
+  prev: GameState,
+  rowWords: LineWord[][],
+  colWords: LineWord[][],
+  singleWords: SingleWord[],
+): Pick<GameState, "listedWords" | "wordSeq" | "freshWordIds"> {
+  const entries: Omit<WordItem, "id">[] = [];
+  rowWords.forEach((list, r) =>
+    list.forEach((w) => entries.push({ word: w.word, score: w.score, key: `r${r}:${w.word}@${w.a}` })),
+  );
+  colWords.forEach((list, c) =>
+    list.forEach((w) => entries.push({ word: w.word, score: w.score, key: `c${c}:${w.word}@${w.a}` })),
+  );
+  singleWords.forEach((w) =>
+    entries.push({ word: w.word, score: w.score, key: `s:${w.r},${w.c}` }),
+  );
+
+  const prevIds = new Map(prev.listedWords.map((it) => [it.key, it.id]));
+  let wordSeq = prev.wordSeq;
+  const freshWordIds = new Set<number>();
+  const listedWords: WordItem[] = entries.map((e) => {
+    const existing = prevIds.get(e.key);
+    if (existing !== undefined) return { ...e, id: existing };
+    const id = wordSeq++;
+    freshWordIds.add(id);
+    return { ...e, id };
+  });
+  return { listedWords, wordSeq, freshWordIds };
+}
+
 function bestOverall(s: GameState): string {
   const all = [...s.listedWords, ...s.rowWords.flat(), ...s.colWords.flat()];
   const best = all.slice().sort((a, b) => b.score - a.score)[0];
@@ -171,13 +208,7 @@ function afterLand(prev: GameState, r: number, c: number, joker: boolean): GameS
     ...freshSingles.map((w) => "s:" + w.r + "," + w.c),
   ]);
 
-  let wordSeq = prev.wordSeq;
-  const freshWordIds = new Set<number>();
-  const newItems: WordItem[] = fresh.map((w) => {
-    const id = wordSeq++;
-    freshWordIds.add(id);
-    return { word: w.word, score: w.score, id };
-  });
+  const { listedWords, wordSeq, freshWordIds } = relist(prev, rowWords, colWords, singleWords);
 
   let { soundPling, soundPlingLen, floatCue } = prev;
   if (fresh.length) {
@@ -194,7 +225,7 @@ function afterLand(prev: GameState, r: number, c: number, joker: boolean): GameS
     singleWords,
     score,
     numWords,
-    listedWords: [...prev.listedWords, ...newItems],
+    listedWords,
     wordSeq,
     freshWordIds,
     newRingKeys,
@@ -264,21 +295,19 @@ export function reducer(s: GameState, a: Action): GameState {
     case "finishArrange": {
       if (s.phase !== "arrange" || s.startHand.some((h) => h.r == null)) return s;
       const scan = fullRescan(s.lang, s.grid);
-      const all = [...scan.rowWords.flat(), ...scan.colWords.flat(), ...scan.singleWords];
-      let wordSeq = s.wordSeq;
-      const freshWordIds = new Set<number>();
-      const listedWords: WordItem[] = all.map((w) => {
-        const id = wordSeq++;
-        freshWordIds.add(id);
-        return { word: w.word, score: w.score, id };
-      });
+      const { listedWords, wordSeq, freshWordIds } = relist(
+        s,
+        scan.rowWords,
+        scan.colWords,
+        scan.singleWords,
+      );
       const base: GameState = {
         ...s,
         ...scan,
         listedWords,
         wordSeq,
         freshWordIds,
-        soundPling: all.length ? s.soundPling + 1 : s.soundPling,
+        soundPling: listedWords.length ? s.soundPling + 1 : s.soundPling,
         soundPlingLen: 3,
       };
       return nextTurn(base);

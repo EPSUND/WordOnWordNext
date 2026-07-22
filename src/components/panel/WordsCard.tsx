@@ -5,11 +5,11 @@ interface Props {
   state: GameState;
 }
 
-/** Hittade ord. Sist i båda layouterna. */
+/** De just nu poänggivande orden. Sist i båda layouterna. */
 export default function WordsCard({ state }: Props) {
   return (
     <div className="card words">
-      <h2>Hittade ord</h2>
+      <h2>Ord</h2>
       <WordList state={state} />
     </div>
   );
