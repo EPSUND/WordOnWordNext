@@ -3,6 +3,7 @@ import type { GameState } from "../../game/reducer";
 import { COLS, ROWS, VALUES } from "../../lib/engine/constants";
 import { PAD, cellXY, landingRow } from "../../lib/engine/grid";
 import { useCoarsePointer } from "../../hooks/useCoarsePointer";
+import { useTouchAim } from "../../hooks/useTouchAim";
 import "./Board.css";
 
 interface Props {
@@ -26,6 +27,7 @@ interface Float {
 export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, onLanded }: Props) {
   const { grid, lang, phase } = state;
   const coarse = useCoarsePointer();
+  const aim = useTouchAim(onSetCol, onDrop);
   const [hover, setHover] = useState<{ r: number; c: number } | null>(null);
   const [floats, setFloats] = useState<Float[]>([]);
   const lastFloat = useRef(-1);
@@ -194,23 +196,16 @@ export default function Board({ state, tile, onSetCol, onDrop, onArrangeClick, o
   const hits: React.ReactNode[] = [];
   if (phase === "play") {
     for (let c = 0; c < COLS; c++) {
+      // Touch: håll fingret för att sikta (brickan i dropzonen följer med) och
+      // släpp för att lägga – useTouchAim. Mus: hovern flyttar, klick lägger.
+      const handlers = coarse
+        ? aim(c)
+        : {
+            onPointerMove: () => onSetCol(c),
+            onClick: () => (state.currentCol === c ? onDrop() : onSetCol(c)),
+          };
       hits.push(
-        <div
-          key={`col${c}`}
-          className="colhit"
-          style={{ left: PAD + c * t }}
-          // På touch finns ingen hovring: ett tryck väljer kolumn OCH släpper.
-          // (Reducern kör actions i ordning, så drop ser den nya kolumnen.)
-          onPointerMove={coarse ? undefined : () => onSetCol(c)}
-          onClick={
-            coarse
-              ? () => {
-                  onSetCol(c);
-                  onDrop();
-                }
-              : () => (state.currentCol === c ? onDrop() : onSetCol(c))
-          }
-        />,
+        <div key={`col${c}`} className="colhit" style={{ left: PAD + c * t }} {...handlers} />,
       );
     }
   } else if (phase === "arrange") {

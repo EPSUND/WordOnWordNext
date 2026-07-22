@@ -17,7 +17,8 @@
     repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--tile-size) - 1px), var(--cellline) calc(var(--tile-size) - 1px), var(--cellline) var(--tile-size));
   border-radius:6px;pointer-events:none;
 }
-.colhit{position:absolute;top:0;bottom:0;width:var(--tile-size);cursor:pointer}
+/* touch-action:none så att sikt-draget (useTouchAim) inte scrollar sidan. */
+.colhit{position:absolute;top:0;bottom:0;width:var(--tile-size);cursor:pointer;touch-action:none}
 
 .tile{
   position:absolute;left:0;top:0;width:var(--tile-size);height:var(--tile-size);

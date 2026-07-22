@@ -3,6 +3,7 @@ import type { GameState } from "../../game/reducer";
 import { COLS, VALUES } from "../../lib/engine/constants";
 import { PAD } from "../../lib/engine/grid";
 import { useCoarsePointer } from "../../hooks/useCoarsePointer";
+import { useTouchAim } from "../../hooks/useTouchAim";
 import "./DropZone.css";
 
 interface Props {
@@ -18,6 +19,7 @@ const pts = (lang: GameState["lang"], letter: string) => VALUES[lang][letter] ||
 export default function DropZone({ state, tile, onSetCol, onDrop, onSelectHand }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const coarse = useCoarsePointer();
+  const aim = useTouchAim(onSetCol, onDrop);
   const shakeSeen = useRef(state.shake);
   const t = tile;
 
@@ -65,23 +67,17 @@ export default function DropZone({ state, tile, onSetCol, onDrop, onSelectHand }
         )}
 
       {state.phase === "play" &&
-        Array.from({ length: COLS }, (_, c) => (
-          <div
-            key={`dcol${c}`}
-            className="colhit"
-            style={{ left: PAD + c * t }}
-            // Se Board.tsx: ett tryck = välj + släpp på touch.
-            onPointerMove={coarse ? undefined : () => onSetCol(c)}
-            onClick={
-              coarse
-                ? () => {
-                    onSetCol(c);
-                    onDrop();
-                  }
-                : () => (state.currentCol === c ? onDrop() : onSetCol(c))
-            }
-          />
-        ))}
+        Array.from({ length: COLS }, (_, c) => {
+          // Touch: håll + dra för att sikta, släpp för att lägga (useTouchAim).
+          // Mus: hovern flyttar brickan, klick lägger. Se Board.tsx.
+          const handlers = coarse
+            ? aim(c)
+            : {
+                onPointerMove: () => onSetCol(c),
+                onClick: () => (state.currentCol === c ? onDrop() : onSetCol(c)),
+              };
+          return <div key={`dcol${c}`} className="colhit" style={{ left: PAD + c * t }} {...handlers} />;
+        })}
     </div>
   );
 }

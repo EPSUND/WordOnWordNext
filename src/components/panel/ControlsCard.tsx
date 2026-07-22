@@ -35,15 +35,23 @@ export default function ControlsCard({
   return (
     <div className="card controls">
       {/* Efter spelets slut är brädet kvar att titta på, men "nästa bricka"
-          och spelinstruktionen är inte längre relevanta. */}
-      {state.phase !== "over" && (
+          och spelinstruktionen är inte längre relevanta. På mobil döljs blocket
+          även under arrangeringen: nästa-brickan och släpp-hjälpen gäller inte
+          där (prepnote nedan förklarar arrangeringen i stället), och utan h2:n
+          blir "–" + fel hjälptext bara förvirrande. */}
+      {state.phase !== "over" && !(coarse && state.phase === "arrange") && (
         <>
           <h2>Nästa bricka</h2>
           <div className="nextwrap">
-            <div className="minitile">{nextTile}</div>
+            {/* "Nästa"-etiketten visas bara på mobil, där h2:n ovan är dold –
+                utan den förväxlas nästa-brickan med den aktiva i dropzonen. */}
+            <div className="nextcol">
+              <span className="nextcap">Nästa</span>
+              <div className="minitile">{nextTile}</div>
+            </div>
             <div className="hint">
               {coarse ? (
-                "Tryck på en kolumn för att släppa brickan."
+                "Håll fingret på en kolumn – brickan ovanför brädet flyttar dit. Släpp för att lägga den."
               ) : (
                 <>
                   Flytta med <kbd>←</kbd>
