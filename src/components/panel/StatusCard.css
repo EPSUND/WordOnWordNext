@@ -3,6 +3,10 @@
 .stats{margin-top:8px} /* ersätter den inline-stil som låg i gamla SidePanel */
 .statrow{display:flex;justify-content:space-between;font-size:14px;color:var(--text);padding:2px 0}
 .statrow b{color:var(--tile1)}
+/* Nästa-brickan i statusraden – bara mobilt stående (media query nedan).
+   .minitile/.nextcap är globala och definieras i ControlsCard.css (samma bricka,
+   återanvänd som .tile delas av Board/DropZone). */
+.statusnext{display:none}
 
 /* Kompakt läge: kortet blir en rad, rubriken och de mindre viktiga värdena
    (språk/läge, valda i startdialogen) döljs för att spara höjd. */
@@ -18,4 +22,12 @@
 }
 @media (max-height:600px){
   .status .scorebig{font-size:26px}
+}
+/* Mobilt stående: nästa-brickan flyttas hit, längst ut i statusraden ovanför
+   dropzonen. I landskap (blocket ovan) och på skrivbord ligger den kvar i
+   kontrollkortet. */
+@media (max-width:700px) and (min-height:601px){
+  .status .statusnext{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
+  .status .statusnext .nextcap{display:block}
+  .status .minitile{width:38px;height:38px;font-size:20px}
 }

@@ -18,6 +18,11 @@ export default function StatusCard({ state }: Props) {
       : Math.max(0, handLeft + (TOTAL_BLOCKS - state.bagIndex) + (state.jokerUsed ? 0 : 1));
   const modeLabel =
     state.mode === "daily" ? "Dagligt " + (state.dailyDate || "") : "Slumpmässigt";
+  // Nästa-brickan visas här bara i mobilt stående läge (via .statusnext-media-
+  // queryn); där flyttas den upp i statusraden ovanför dropzonen så att den inte
+  // förväxlas med den aktiva brickan man släpper. På skrivbord/landskap ligger
+  // den kvar i kontrollkortet och det här blocket är dolt.
+  const showNext = state.phase === "play" || state.phase === "fall" || state.phase === "joker";
 
   return (
     <div className="card status">
@@ -43,6 +48,12 @@ export default function StatusCard({ state }: Props) {
           <b>{modeLabel}</b>
         </div>
       </div>
+      {showNext && (
+        <div className="statusnext">
+          <span className="nextcap">Nästa</span>
+          <div className="minitile">{state.nextLetter || "–"}</div>
+        </div>
+      )}
     </div>
   );
 }
