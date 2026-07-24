@@ -86,6 +86,7 @@ export default function App() {
           forced={state.bagIndex >= TOTAL_BLOCKS}
           lang={state.lang}
           onChoose={actions.chooseJoker}
+          onCancel={state.bagIndex >= TOTAL_BLOCKS ? undefined : actions.cancelJoker}
         />
       )}
 

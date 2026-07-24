@@ -260,6 +260,22 @@ describe("joker", () => {
     const s = { ...toPlay(started()), phase: "fall" as const };
     expect(reducer(s, { type: "useJoker" })).toBe(s);
   });
+
+  it("går att ångra en frivilligt öppnad joker och återställer bagIndex", () => {
+    const play = toPlay(started());
+    const opened = reducer(play, { type: "useJoker" });
+    const s = reducer(opened, { type: "cancelJoker" });
+    expect(s.phase).toBe("play");
+    expect(s.bagIndex).toBe(play.bagIndex);
+    expect(s.currentLetter).toBe(play.currentLetter);
+    expect(s.isJokerTile).toBe(false);
+  });
+
+  it("går inte att ångra den tvingade slutjokern", () => {
+    // playOut definieras nedan i "spelets slut"; återskapa den minimala uppställningen här.
+    const forced = { ...toPlay(started()), phase: "joker" as const, bagIndex: TOTAL_BLOCKS };
+    expect(reducer(forced, { type: "cancelJoker" })).toBe(forced);
+  });
 });
 
 describe("spelets slut", () => {

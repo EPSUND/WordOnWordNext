@@ -75,6 +75,7 @@ export type Action =
   | { type: "drop" }
   | { type: "landed" }
   | { type: "useJoker" }
+  | { type: "cancelJoker" }
   | { type: "chooseJoker"; letter: string }
   | { type: "undo" }
   | { type: "reset" };
@@ -361,6 +362,14 @@ export function reducer(s: GameState, a: Action): GameState {
     case "useJoker": {
       if (s.phase !== "play" || s.jokerUsed || s.currentLetter == null || s.isJokerTile) return s;
       return { ...s, bagIndex: s.bagIndex - 1, phase: "joker" };
+    }
+
+    case "cancelJoker": {
+      // Ångra en frivilligt öppnad joker: återställ brickräknaren som "useJoker"
+      // drog ned och gå tillbaka till play. Den tvingade slutjokern (bagIndex vid
+      // TOTAL_BLOCKS, ingen bricka kvar) går inte att ångra.
+      if (s.phase !== "joker" || s.bagIndex >= TOTAL_BLOCKS) return s;
+      return { ...s, bagIndex: s.bagIndex + 1, phase: "play" };
     }
 
     case "chooseJoker": {

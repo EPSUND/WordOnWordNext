@@ -43,6 +43,14 @@ export function useGame() {
         }
         return;
       }
+      if (state.phase === "joker") {
+        // Escape ångrar en frivilligt öppnad joker (reducern nekar den tvingade slutjokern).
+        if (e.key === "Escape") {
+          dispatch({ type: "cancelJoker" });
+          e.preventDefault();
+        }
+        return;
+      }
       if (state.phase !== "play") return;
       if (e.key === "ArrowLeft") {
         dispatch({ type: "setCol", c: state.currentCol - 1 });
@@ -95,6 +103,7 @@ export function useGame() {
       drop: () => dispatch({ type: "drop" }),
       landed: () => dispatch({ type: "landed" }),
       useJoker: () => dispatch({ type: "useJoker" }),
+      cancelJoker: () => dispatch({ type: "cancelJoker" }),
       undo: () => dispatch({ type: "undo" }),
       chooseJoker: (letter: string) => dispatch({ type: "chooseJoker", letter }),
       selectHand: (i: number) => dispatch({ type: "selectHand", i }),
