@@ -64,6 +64,9 @@ src/components/     Grupperade efter funktion. Foo.css bredvid Foo.tsx, importer
   dialogs/            Overlay (chrome + det dialogerna delar) och
                         StartDialog, JokerDialog, EndDialog, HighscoreDialog,
                         HighscoreTable
+  icons/              Icon.tsx – delade SVG-ikoner (namn-register, currentColor,
+                        1em). Ritas som SVG, inte Unicode-glyfer, så pilarna ser
+                        likadana ut på desktop och mobil (glyfer blev färgemoji)
 src/index.css       Laddar bara basen (@import styles/*)
 src/styles/base.css   Variabler, reset, element- och .card-regler
 src/styles/layout.css .layout-griden och kortens placering

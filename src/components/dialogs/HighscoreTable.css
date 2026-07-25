@@ -2,3 +2,10 @@
 .hstable td,.hstable th{padding:4px 6px;text-align:left;border-bottom:1px solid #33493e}
 .hstable td:last-child,.hstable th:last-child{text-align:right}
 .hstable tr.me td{color:var(--ring);font-weight:600}
+
+/* Navigering mellan sidor i topplistan. */
+.hspager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.hspager button{padding:5px 10px;line-height:0;display:inline-flex;align-items:center;justify-content:center}
+.hspager button:disabled{opacity:.4;cursor:default}
+.hsicon{width:13px;height:13px}
+.hspageinfo{font-size:13px;color:var(--muted);min-width:96px;text-align:center;font-variant-numeric:tabular-nums}

@@ -72,7 +72,9 @@ export default function EndDialog({
       const idx = sorted.findIndex((e) => e.score === score && e.name === finalName);
       setEntries(list);
       setError(null);
-      setHighlightIdx(idx >= 0 && idx < 10 ? idx : null);
+      // Absolut placering (inte bara topp 10): tabellen bläddrar själv till
+      // sidan med spelarens resultat och markerar raden.
+      setHighlightIdx(idx >= 0 ? idx : null);
     } catch (e) {
       setEntries(null);
       setError(e instanceof Error ? e.message : "Fel");
