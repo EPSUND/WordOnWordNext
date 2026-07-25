@@ -14,14 +14,14 @@ const PAGE_SIZE = 10;
 const COLS = 5; // #, Namn, Poäng, Spelad, Mer info
 const clean = (s: string) => s.replace(/[<>&]/g, "");
 
-/** Kompakt lokal tidsstämpel, t.ex. "25/7 14:30". */
+/** Lokal tidsstämpel på formatet "2026-07-26 00:59". */
 function fmtWhen(iso: string | null): string {
   if (!iso) return "–";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "–";
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${d.getDate()}/${d.getMonth() + 1} ${hh}:${mm}`;
+  const p = (n: number) => String(n).padStart(2, "0");
+  const date = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return `${date} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 export default function HighscoreTable({ entries, loading, error, highlightIdx }: Props) {
