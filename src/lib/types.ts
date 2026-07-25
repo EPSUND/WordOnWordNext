@@ -36,4 +36,6 @@ export interface ScoreEntry {
   lang: Lang;
   bestWord: string | null;
   daily: string | null;
+  /** ISO-tidsstämpel för när resultatet sparades (created_at). */
+  created: string | null;
 }

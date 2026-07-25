@@ -12,6 +12,7 @@ const entry = (over: Partial<ScoreEntry> = {}): ScoreEntry => ({
   lang: "sv",
   bestWord: "KATT",
   daily: null,
+  created: null,
   ...over,
 });
 
@@ -41,6 +42,7 @@ describe("loadScores", () => {
     expect(url).toContain("lang:language");
     expect(url).toContain("bestWord:best_word");
     expect(url).toContain("daily:daily_game_date");
+    expect(url).toContain("created:created_at");
     expect(url).toContain("order=score.desc");
     expect(url).toContain("limit=200");
   });

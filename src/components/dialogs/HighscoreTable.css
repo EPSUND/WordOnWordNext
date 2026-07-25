@@ -1,7 +1,27 @@
 .hstable{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
 .hstable td,.hstable th{padding:4px 6px;text-align:left;border-bottom:1px solid #33493e}
-.hstable td:last-child,.hstable th:last-child{text-align:right}
+/* Sista kolumnen är "Mer info": centrera rubriken (karet centreras nedan). */
+.hstable th:last-child{white-space:nowrap;text-align:center}
 .hstable tr.me td{color:var(--ring);font-weight:600}
+
+/* Speltiden i utfällningen: håll tidsstämpeln på en rad. */
+.hswhen{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* Expanderbara rader (klick/tryck viker ut mer info). */
+.hstable tr.expandable{cursor:pointer}
+.hstable tr.expandable:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.hstable td.hscaret{width:20px;padding-left:0;text-align:center}
+.hs-caret{display:inline-block;width:11px;height:11px;vertical-align:middle;color:var(--muted);transition:transform .15s ease}
+.hs-caret.open{transform:rotate(90deg)}
+@media (hover:hover){
+  .hstable tr.expandable:hover td{background:#ffffff0d}
+}
+
+/* Utfälld detaljrad (antal ord + speltid). */
+.hstable tr.hsdetail td{color:var(--muted);font-size:13px;padding-top:2px;padding-bottom:6px;text-align:left}
+.hstable tr.hsdetail b{color:var(--text)}
+.hsdetailitem{display:inline-block}
+.hsdetailitem + .hsdetailitem{margin-left:18px}
 
 /* Navigering mellan sidor i topplistan. */
 .hspager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}

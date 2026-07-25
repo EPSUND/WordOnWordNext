@@ -11,7 +11,7 @@ const SUPA_HEADERS: Record<string, string> = {
   "Content-Type": "application/json",
 };
 const HS_SELECT =
-  "select=name,score,words:word_count,lang:language,bestWord:best_word,daily:daily_game_date";
+  "select=name,score,words:word_count,lang:language,bestWord:best_word,daily:daily_game_date,created:created_at";
 
 async function fetchScores(params: string): Promise<ScoreEntry[]> {
   let r: Response;

@@ -5,7 +5,7 @@ import "./Icon.css";
    ser likadan ut överallt. Storleken är 1em (följer font-size); sätt en egen bredd
    via className där en annan storlek behövs. Lägg till nya ikoner i PATHS. */
 
-export type IconName = "first" | "prev" | "next" | "last";
+export type IconName = "first" | "prev" | "next" | "last" | "expand";
 
 const PATHS: Record<IconName, ReactNode> = {
   first: (
@@ -22,6 +22,8 @@ const PATHS: Record<IconName, ReactNode> = {
       <rect x="11.2" y="3.5" width="1.8" height="9" />
     </>
   ),
+  // Disclosure-triangel: pekar åt höger, roteras till nedåt när raden är öppen.
+  expand: <path d="M6 4 L11 8 L6 12 Z" />,
 };
 
 interface Props {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { ScoreEntry } from "../../lib/types";
 import Icon from "../icons/Icon";
 import "./HighscoreTable.css";
@@ -11,13 +11,25 @@ interface Props {
 }
 
 const PAGE_SIZE = 10;
+const COLS = 5; // #, Namn, Poäng, Spelad, Mer info
 const clean = (s: string) => s.replace(/[<>&]/g, "");
+
+/** Kompakt lokal tidsstämpel, t.ex. "25/7 14:30". */
+function fmtWhen(iso: string | null): string {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "–";
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getDate()}/${d.getMonth() + 1} ${hh}:${mm}`;
+}
 
 export default function HighscoreTable({ entries, loading, error, highlightIdx }: Props) {
   const sorted = (entries ?? []).slice().sort((a, b) => b.score - a.score);
   const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
 
   const [page, setPage] = useState(0);
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   // Nollställ till första sidan när listan byts (t.ex. språk/läge/datum).
   useEffect(() => {
@@ -39,6 +51,11 @@ export default function HighscoreTable({ entries, loading, error, highlightIdx }
   const start = curPage * PAGE_SIZE;
   const visible = sorted.slice(start, start + PAGE_SIZE);
 
+  // Fäll ihop en öppen detaljrad när man byter sida eller lista.
+  useEffect(() => {
+    setExpanded(null);
+  }, [curPage, entries]);
+
   return (
     <>
       <table className="hstable">
@@ -46,27 +63,27 @@ export default function HighscoreTable({ entries, loading, error, highlightIdx }
           <tr>
             <th>#</th>
             <th>Namn</th>
-            <th>Ord</th>
-            <th>Bästa ord</th>
             <th>Poäng</th>
+            <th>Bästa ord</th>
+            <th>Mer info</th>
           </tr>
           {loading && (
             <tr>
-              <td colSpan={5} style={{ color: "var(--muted)" }}>
+              <td colSpan={COLS} style={{ color: "var(--muted)" }}>
                 Laddar…
               </td>
             </tr>
           )}
           {!loading && error && (
             <tr>
-              <td colSpan={5} style={{ color: "var(--lingon)" }}>
+              <td colSpan={COLS} style={{ color: "var(--lingon)" }}>
                 {error}
               </td>
             </tr>
           )}
           {!loading && !error && sorted.length === 0 && (
             <tr>
-              <td colSpan={5} style={{ color: "var(--muted)" }}>
+              <td colSpan={COLS} style={{ color: "var(--muted)" }}>
                 Inga resultat ännu.
               </td>
             </tr>
@@ -75,14 +92,46 @@ export default function HighscoreTable({ entries, loading, error, highlightIdx }
             !error &&
             visible.map((e, i) => {
               const rank = start + i;
+              const isOpen = expanded === rank;
+              const toggle = () => setExpanded(isOpen ? null : rank);
               return (
-                <tr key={rank} className={rank === highlightIdx ? "me" : undefined}>
-                  <td>{rank + 1}</td>
-                  <td>{clean(e.name || "")}</td>
-                  <td>{e.words}</td>
-                  <td>{clean(e.bestWord || "–")}</td>
-                  <td>{e.score}</td>
-                </tr>
+                <Fragment key={rank}>
+                  <tr
+                    className={
+                      [rank === highlightIdx ? "me" : "", "expandable"].filter(Boolean).join(" ")
+                    }
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isOpen}
+                    onClick={toggle}
+                    onKeyDown={(ev) => {
+                      if (ev.key === "Enter" || ev.key === " ") {
+                        ev.preventDefault();
+                        toggle();
+                      }
+                    }}
+                  >
+                    <td>{rank + 1}</td>
+                    <td>{clean(e.name || "")}</td>
+                    <td>{e.score}</td>
+                    <td>{clean(e.bestWord || "–")}</td>
+                    <td className="hscaret">
+                      <Icon name="expand" className={isOpen ? "hs-caret open" : "hs-caret"} />
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr className="hsdetail">
+                      <td colSpan={COLS}>
+                        <span className="hsdetailitem">
+                          Antal ord: <b>{e.words}</b>
+                        </span>
+                        <span className="hsdetailitem hswhen">
+                          Spelad: <b>{fmtWhen(e.created)}</b>
+                        </span>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
         </tbody>
@@ -90,11 +139,7 @@ export default function HighscoreTable({ entries, loading, error, highlightIdx }
 
       {!loading && !error && sorted.length > PAGE_SIZE && (
         <div className="hspager">
-          <button
-            onClick={() => setPage(0)}
-            disabled={curPage === 0}
-            aria-label="Första sidan"
-          >
+          <button onClick={() => setPage(0)} disabled={curPage === 0} aria-label="Första sidan">
             <Icon name="first" className="hsicon" />
           </button>
           <button
