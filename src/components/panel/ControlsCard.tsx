@@ -1,5 +1,6 @@
 import type { GameState } from "../../game/reducer";
 import { useCoarsePointer } from "../../hooks/useCoarsePointer";
+import Icon from "../icons/Icon";
 import "./ControlsCard.css";
 
 interface Props {
@@ -79,7 +80,8 @@ export default function ControlsCard({
       )}
       {state.phase === "arrange" && (
         <button className="startbtn2" disabled={handLeft !== 0} onClick={onFinishArrange}>
-          Börja spela ▶
+          Börja spela
+          <Icon name="next" className="btnicon trail big" />
         </button>
       )}
       {state.phase !== "over" && !jokerHidden && (
@@ -89,7 +91,8 @@ export default function ControlsCard({
       )}
       {state.phase !== "over" && !undoHidden && (
         <button className="undobtn" disabled={undoDisabled} onClick={onUndo}>
-          ↩︎ Ångra drag {!coarse && <kbd>Z</kbd>}
+          <Icon name="undo" className="btnicon lead" />
+          Ångra drag {!coarse && <kbd>Z</kbd>}
         </button>
       )}
       {state.phase === "over" && onShowResult && (

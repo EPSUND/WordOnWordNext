@@ -5,7 +5,16 @@ import "./Icon.css";
    ser likadan ut överallt. Storleken är 1em (följer font-size); sätt en egen bredd
    via className där en annan storlek behövs. Lägg till nya ikoner i PATHS. */
 
-export type IconName = "first" | "prev" | "next" | "last" | "expand";
+export type IconName =
+  | "first"
+  | "prev"
+  | "next"
+  | "last"
+  | "expand"
+  | "sound-on"
+  | "sound-off"
+  | "trophy"
+  | "undo";
 
 const PATHS: Record<IconName, ReactNode> = {
   first: (
@@ -24,6 +33,72 @@ const PATHS: Record<IconName, ReactNode> = {
   ),
   // Disclosure-triangel: pekar åt höger, roteras till nedåt när raden är öppen.
   expand: <path d="M6 4 L11 8 L6 12 Z" />,
+  "sound-on": (
+    <>
+      <path d="M2 6 L4.5 6 L8 3 V13 L4.5 10 L2 10 Z" />
+      <path
+        className="wave"
+        d="M10.5 5.5 Q12.5 8 10.5 10.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        className="wave"
+        d="M12.5 3.8 Q15.5 8 12.5 12.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </>
+  ),
+  "sound-off": (
+    <>
+      <path d="M2 6 L4.5 6 L8 3 V13 L4.5 10 L2 10 Z" />
+      <path
+        d="M10.8 5.8 L14.2 9.2 M14.2 5.8 L10.8 9.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </>
+  ),
+  trophy: (
+    <>
+      <path d="M4 2.5 H12 V5 A4 4 0 0 1 4 5 Z" />
+      <path
+        d="M4 3 H2.3 A2 2 0 0 0 4 6.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.1"
+      />
+      <path
+        d="M12 3 H13.7 A2 2 0 0 1 12 6.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.1"
+      />
+      <rect x="7.1" y="9" width="1.8" height="2.2" />
+      <rect x="4.8" y="11" width="6.4" height="1.5" rx="0.4" />
+      <rect x="5.6" y="12.5" width="4.8" height="1.5" rx="0.4" />
+    </>
+  ),
+  undo: (
+    <>
+      <path
+        d="M12 5 V7 A3.5 3.5 0 0 1 8.5 10.5 H4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M7 6.8 L2.4 10.5 L7 14.2 Z" />
+    </>
+  ),
 };
 
 interface Props {
@@ -37,7 +112,7 @@ interface Props {
 export default function Icon({ name, className, title }: Props) {
   return (
     <svg
-      className={className ? `icon ${className}` : "icon"}
+      className={`icon icon-${name}${className ? " " + className : ""}`}
       viewBox="0 0 16 16"
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}

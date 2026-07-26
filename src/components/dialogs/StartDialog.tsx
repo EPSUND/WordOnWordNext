@@ -1,4 +1,5 @@
 import type { GameMode, Lang } from "../../lib/types";
+import Icon from "../icons/Icon";
 import Overlay from "./Overlay";
 
 interface Props {
@@ -71,7 +72,10 @@ export default function StartDialog({
         <button className="primary" style={{ flex: 1 }} disabled={starting} onClick={onStart}>
           {starting ? "Laddar…" : "Starta spelet"}
         </button>
-        <button onClick={onOpenHighscores}>🏆 Topplista</button>
+        <button onClick={onOpenHighscores}>
+          <Icon name="trophy" className="btnicon lead" />
+          Topplista
+        </button>
       </div>
     </Overlay>
   );

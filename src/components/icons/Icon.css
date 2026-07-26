@@ -1,1 +1,12 @@
-.icon{width:1em;height:1em;display:block;fill:currentColor;flex:none}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:middle;fill:currentColor;flex:none}
+/* Ikon som sitter bredvid text i en knapp/etikett – ge lite luft mot texten. */
+.btnicon{position:relative;top:-0.05em}
+.btnicon.lead{margin-right:.45em}
+.btnicon.trail{margin-left:.4em}
+.btnicon.big{width:1.5em;height:1.5em}
+
+/* Fasta färger för ikoner som ska likna sina tidigare emojis, oberoende av
+   knappens textfärg. currentColor styr grunden; accenter sätts separat. */
+.icon-trophy{color:var(--ring);width:1.4em;height:1.4em}          /* pokal: guldgul */
+.icon-sound-on,.icon-sound-off{color:var(--muted);width:1.4em;height:1.4em}  /* högtalare: grå */
+.icon-sound-on .wave{stroke:#5aa9e6}            /* ljudvågor: blå */
