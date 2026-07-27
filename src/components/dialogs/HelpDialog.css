@@ -25,3 +25,16 @@
   padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text);
 }
 .help-joker b{color:#e8a29b}
+
+/* Tillbaka-länk högst upp i poängvyn. */
+.help-back{margin-bottom:10px}
+
+/* Poängtabeller: värde till vänster, bokstäver/bonus till höger. */
+.help-table{width:100%;border-collapse:collapse;margin-top:4px}
+.help-table th{
+  text-align:left;padding:4px 10px 8px 0;color:var(--muted);
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
+}
+.help-table td{padding:7px 10px 7px 0;border-top:1px solid #33493e;font-size:14px}
+.help-table .val{color:var(--ring);font-weight:700;font-family:Georgia,serif;white-space:nowrap}
+.help-table .letters{color:var(--text);font-weight:600;letter-spacing:.08em}

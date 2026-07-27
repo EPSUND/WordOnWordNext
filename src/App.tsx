@@ -121,7 +121,7 @@ export default function App() {
         />
       )}
 
-      {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
+      {helpOpen && <HelpDialog lang={state.lang} onClose={() => setHelpOpen(false)} />}
     </>
   );
 }
