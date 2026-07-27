@@ -1,0 +1,26 @@
+/* Datumväljaren i dagligt läge: en tydlig etikett + pilar för att stega en dag
+   i taget, med datumfältet i mitten. Utan detta var det inte uppenbart att man
+   kunde byta dag (särskilt på mobil). */
+.hsdaterow{margin-top:10px}
+.hsdaterow .hslabel{
+  display:block;font-size:12px;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--muted);font-weight:600;margin-bottom:6px;text-align:center;
+}
+/* stretch: pilarna och datumfältet får samma höjd (det högsta styr), så de
+   linjerar prydligt även om deras inre padding/innehåll skiljer sig. */
+.hsdatenav{display:flex;align-items:stretch;justify-content:center;gap:8px}
+.hsdatenav button{padding:7px 12px;line-height:0;display:inline-flex;align-items:center;justify-content:center}
+.hsdatenav button:disabled{opacity:.4;cursor:default}
+.hsdatenav input[type="date"]{
+  font:inherit;color:var(--text);background:#2b423880;
+  border:1px solid #3d5a4d;border-radius:8px;padding:6px 10px;
+  text-align:center;font-variant-numeric:tabular-nums;
+}
+.hsdatenav input[type="date"]:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+/* Ljus kalenderikon på den mörka bakgrunden. */
+.hsdatenav input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7;cursor:pointer}
+
+@media (pointer:coarse){
+  .hsdatenav button{min-height:44px}
+  .hsdatenav input[type="date"]{min-height:44px}
+}

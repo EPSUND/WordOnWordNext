@@ -2,8 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import type { GameMode, Lang, ScoreEntry } from "../../lib/types";
 import { loadDailyScores, loadScores } from "../../lib/scores";
 import { todayStr } from "../../lib/engine/rng";
+import Icon from "../icons/Icon";
 import HighscoreTable from "./HighscoreTable";
 import Overlay from "./Overlay";
+import "./HighscoreDialog.css";
+
+/** Stega ett datum ("YYYY-MM-DD") ett antal dagar. Lokal tid, som todayStr. */
+function shiftDate(date: string, days: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + days);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return dt.getFullYear() + "-" + p(dt.getMonth() + 1) + "-" + p(dt.getDate());
+}
 
 interface Props {
   initialLang: Lang;
@@ -67,13 +77,29 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
         </button>
       </div>
       {viewMode === "daily" && (
-        <div style={{ marginTop: 10 }}>
-          <input
-            type="date"
-            value={viewDate}
-            max={todayStr()}
-            onChange={(e) => setViewDate(e.target.value)}
-          />
+        <div className="hsdaterow">
+          <span className="hslabel">Välj dag</span>
+          <div className="hsdatenav">
+            <button
+              onClick={() => setViewDate(shiftDate(viewDate, -1))}
+              aria-label="Föregående dag"
+            >
+              <Icon name="prev" className="hsicon" />
+            </button>
+            <input
+              type="date"
+              value={viewDate}
+              max={todayStr()}
+              onChange={(e) => setViewDate(e.target.value)}
+            />
+            <button
+              onClick={() => setViewDate(shiftDate(viewDate, 1))}
+              disabled={viewDate >= todayStr()}
+              aria-label="Nästa dag"
+            >
+              <Icon name="next" className="hsicon" />
+            </button>
+          </div>
         </div>
       )}
 
