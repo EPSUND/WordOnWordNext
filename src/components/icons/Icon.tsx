@@ -14,7 +14,8 @@ export type IconName =
   | "sound-on"
   | "sound-off"
   | "trophy"
-  | "undo";
+  | "undo"
+  | "help";
 
 const PATHS: Record<IconName, ReactNode> = {
   first: (
@@ -97,6 +98,14 @@ const PATHS: Record<IconName, ReactNode> = {
         strokeLinejoin="round"
       />
       <path d="M7 6.8 L2.4 10.5 L7 14.2 Z" />
+    </>
+  ),
+  // Info: ringad "i" (prick + stapel). Ritas i currentColor som de andra.
+  help: (
+    <>
+      <circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="8" cy="4.8" r="1.05" />
+      <rect x="7.05" y="6.7" width="1.9" height="4.9" rx="0.9" />
     </>
   ),
 };

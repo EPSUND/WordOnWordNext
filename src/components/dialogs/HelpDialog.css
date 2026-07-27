@@ -1,0 +1,27 @@
+/* Hjälpdialogen: strukturerad "hur man spelar" i stället för en textvägg.
+   Delar dialogchromet i Overlay.css; här bara det som är eget för hjälpen. */
+
+/* Sektionsrubrik i samma dämpade stil som .card h2 (versaler, spärrat). */
+.help-h{
+  font-family:system-ui;font-size:12px;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--muted);margin:20px 0 8px;
+}
+
+/* Numrerade steg med runda markörer i ring-färgen. */
+.help-steps{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.help-steps li{display:flex;gap:12px;align-items:flex-start}
+.help-steps .num{
+  flex:none;width:26px;height:26px;border-radius:50%;
+  background:var(--ring);color:#221a08;
+  font-family:Georgia,serif;font-weight:700;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+}
+.help-steps .txt{font-size:14px;color:var(--text);line-height:1.45}
+.help-steps b{color:var(--tile1);font-weight:600}
+
+/* Joker-ruta: framhävd notis. */
+.help-joker{
+  margin-top:16px;background:#2b423880;border:1px solid #3d5a4d;border-radius:10px;
+  padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text);
+}
+.help-joker b{color:#e8a29b}

@@ -11,6 +11,7 @@ interface Props {
   onSetMode: (m: GameMode) => void;
   onStart: () => void;
   onOpenHighscores: () => void;
+  onOpenHelp: () => void;
 }
 
 const muteH2: React.CSSProperties = {
@@ -30,17 +31,17 @@ export default function StartDialog({
   onSetMode,
   onStart,
   onOpenHighscores,
+  onOpenHelp,
 }: Props) {
   return (
     <Overlay>
       <h2>Ord på Ord</h2>
       <p>
         Släpp ner bokstavsbrickor och bilda så många och så långa ord som möjligt – vågrätt och
-        lodrätt. Orden ligger kvar på brädet och kan byggas ut till längre ord. Du börjar med att få
-        alla 5 startbrickor på en gång och placera dem i valfria kolumner – de faller till botten
-        och kan staplas ovanpå varandra. Därefter faller resten av brickorna en och en. Du har också
-        en <b style={{ color: "#e8a29b" }}>joker</b> med valfri bokstav som du kan använda när du
-        vill – klicka på jokerknappen eller tryck <kbd>J</kbd>. Sedan räknas slutpoängen.
+        lodrätt. Orden ligger kvar på brädet och kan byggas ut till längre ord.{" "}
+        <button className="linkbtn" onClick={onOpenHelp}>
+          Hur man spelar
+        </button>
       </p>
 
       <h2 style={muteH2}>Ordlista</h2>

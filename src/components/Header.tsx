@@ -5,10 +5,11 @@ import "./Header.css";
 
 interface Props {
   onOpenHighscores: () => void;
+  onOpenHelp: () => void;
   onNewGame: () => void;
 }
 
-export default function Header({ onOpenHighscores, onNewGame }: Props) {
+export default function Header({ onOpenHighscores, onOpenHelp, onNewGame }: Props) {
   const [on, setOn] = useState(isSoundOn());
   return (
     <header>
@@ -16,6 +17,9 @@ export default function Header({ onOpenHighscores, onNewGame }: Props) {
         ORD <span className="pa">på</span> ORD
       </h1>
       <div className="header-btns">
+        <button title="Hur man spelar" aria-label="Hur man spelar" onClick={onOpenHelp}>
+          <Icon name="help" />
+        </button>
         <button
           title="Ljud av/på"
           aria-label="Ljud av/på"

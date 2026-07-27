@@ -13,12 +13,14 @@ import StartDialog from "./components/dialogs/StartDialog";
 import JokerDialog from "./components/dialogs/JokerDialog";
 import EndDialog from "./components/dialogs/EndDialog";
 import HighscoreDialog from "./components/dialogs/HighscoreDialog";
+import HelpDialog from "./components/dialogs/HelpDialog";
 
 export default function App() {
   const { state, start, starting, startError, actions } = useGame();
   const tile = useTileSize();
   const [startMode, setStartMode] = useState<GameMode>("random");
   const [hsOpen, setHsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [endClosed, setEndClosed] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
 
@@ -33,7 +35,11 @@ export default function App() {
 
   return (
     <>
-      <Header onOpenHighscores={() => setHsOpen(true)} onNewGame={() => actions.reset()} />
+      <Header
+        onOpenHighscores={() => setHsOpen(true)}
+        onOpenHelp={() => setHelpOpen(true)}
+        onNewGame={() => actions.reset()}
+      />
 
       {/* DOM-ordningen är mobilens läsordning; .layout är ett grid som flyttar
           korten till en högerkolumn på skrivbord (grid-template-areas). */}
@@ -78,6 +84,7 @@ export default function App() {
           onSetMode={setStartMode}
           onStart={() => start(startMode)}
           onOpenHighscores={() => setHsOpen(true)}
+          onOpenHelp={() => setHelpOpen(true)}
         />
       )}
 
@@ -113,6 +120,8 @@ export default function App() {
           onClose={() => setHsOpen(false)}
         />
       )}
+
+      {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
     </>
   );
 }
