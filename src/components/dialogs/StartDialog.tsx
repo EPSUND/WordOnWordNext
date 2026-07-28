@@ -1,5 +1,4 @@
 import type { GameMode, Lang } from "../../lib/types";
-import Icon from "../icons/Icon";
 import Overlay from "./Overlay";
 
 interface Props {
@@ -10,7 +9,7 @@ interface Props {
   onSetLang: (l: Lang) => void;
   onSetMode: (m: GameMode) => void;
   onStart: () => void;
-  onOpenHighscores: () => void;
+  onCancel: () => void;
   onOpenHelp: () => void;
 }
 
@@ -30,7 +29,7 @@ export default function StartDialog({
   onSetLang,
   onSetMode,
   onStart,
-  onOpenHighscores,
+  onCancel,
   onOpenHelp,
 }: Props) {
   return (
@@ -73,9 +72,8 @@ export default function StartDialog({
         <button className="primary" style={{ flex: 1 }} disabled={starting} onClick={onStart}>
           {starting ? "Laddar…" : "Starta spelet"}
         </button>
-        <button onClick={onOpenHighscores}>
-          <Icon name="trophy" className="btnicon lead" />
-          Topplista
+        <button disabled={starting} onClick={onCancel}>
+          Avbryt
         </button>
       </div>
     </Overlay>

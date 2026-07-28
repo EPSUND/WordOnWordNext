@@ -388,16 +388,3 @@ describe("undo", () => {
     expect(reducer(falling, { type: "undo" })).toBe(falling);
   });
 });
-
-describe("reset", () => {
-  it("nollställer allt men behåller språk och läge", () => {
-    const played = dropIn(toPlay(started()), 6);
-    const s = reducer({ ...played, lang: "en" }, { type: "reset" });
-    expect(s.phase).toBe("idle");
-    expect(s.score).toBe(0);
-    expect(s.listedWords).toEqual([]);
-    expect(s.grid.flat().every((x) => x === null)).toBe(true);
-    expect(s.lang).toBe("en");
-    expect(s.mode).toBe(played.mode);
-  });
-});

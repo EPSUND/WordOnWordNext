@@ -77,8 +77,7 @@ export type Action =
   | { type: "useJoker" }
   | { type: "cancelJoker" }
   | { type: "chooseJoker"; letter: string }
-  | { type: "undo" }
-  | { type: "reset" };
+  | { type: "undo" };
 
 const makeLines = (n: number): LineWord[][] => Array.from({ length: n }, () => []);
 const cloneGrid = (g: Grid): Grid => g.map((row) => row.slice());
@@ -402,9 +401,6 @@ export function reducer(s: GameState, a: Action): GameState {
         freshWordIds: new Set(),
       };
     }
-
-    case "reset":
-      return { ...initialState, lang: s.lang, mode: s.mode, soundThud: s.soundThud, soundPling: s.soundPling };
 
     default:
       return s;

@@ -75,12 +75,6 @@
   font-style: italic;
   letter-spacing: 0.02em;
 }
-.welcome-tag {
-  font-size: 15px;
-  color: var(--muted);
-  line-height: 1.55;
-  max-width: 380px;
-}
 
 .welcome-btns {
   display: flex;
@@ -111,8 +105,5 @@
   }
   .welcome-inner {
     gap: 12px;
-  }
-  .welcome-tag {
-    font-size: 14px;
   }
 }

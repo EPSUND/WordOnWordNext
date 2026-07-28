@@ -84,7 +84,7 @@ export function useGame() {
       } catch (e) {
         setStarting(false);
         setStartError(e instanceof Error ? e.message : "Kunde inte ladda ordlistan.");
-        return;
+        return false;
       }
       const daily = mode === "daily";
       const dailyDate = daily ? todayStr() : null;
@@ -92,6 +92,7 @@ export function useGame() {
       const bag = makeBag(state.lang, rng);
       dispatch({ type: "start", mode, bag, dailyDate });
       setStarting(false);
+      return true;
     },
     [state.lang],
   );
@@ -109,7 +110,6 @@ export function useGame() {
       selectHand: (i: number) => dispatch({ type: "selectHand", i }),
       arrangeClick: (r: number, c: number) => dispatch({ type: "arrangeClick", r, c }),
       finishArrange: () => dispatch({ type: "finishArrange" }),
-      reset: () => dispatch({ type: "reset" }),
     }),
     [],
   );

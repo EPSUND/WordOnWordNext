@@ -38,10 +38,6 @@ export default function Welcome({ onPlay, onOpenHighscores, onOpenHelp }: Props)
         <h1 className="welcome-title">
           ORD <span className="pa">på</span> ORD
         </h1>
-        <p className="welcome-tag">
-          Släpp ner bokstavsbrickor och bygg ord vågrätt och lodrätt. Orden ligger kvar och kan
-          byggas ut till längre ord.
-        </p>
 
         <div className="welcome-btns">
           <button className="primary welcome-play" onClick={onPlay}>

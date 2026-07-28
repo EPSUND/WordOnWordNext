@@ -20,9 +20,14 @@ export default function App() {
   const { state, start, starting, startError, actions } = useGame();
   const tile = useTileSize();
   const [startMode, setStartMode] = useState<GameMode>("random");
-  // Välkomstsidan visas bara vid första besöket. När den lämnas (Spela) tas den
-  // aldrig tillbaka – "Nytt spel" från headern går direkt till StartDialog.
+  // Välkomstsidan är bakgrund vid första besöket. Den blir false först när ett
+  // spel faktiskt startas – då kommer man aldrig tillbaka hit under sessionen.
+  // Så länge den är true är det den man återgår till om StartDialog avbryts.
   const [welcome, setWelcome] = useState(true);
+  // StartDialog styrs av en egen flagga, INTE av spel-phase: "Nytt spel" ska
+  // kunna öppnas ovanpå ett pågående spel utan att rensa dess state. Först
+  // "Starta spelet" (onStart nedan) nollställer och bygger ett nytt spel.
+  const [startOpen, setStartOpen] = useState(false);
   const [hsOpen, setHsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [endClosed, setEndClosed] = useState(false);
@@ -42,7 +47,7 @@ export default function App() {
       <Header
         onOpenHighscores={() => setHsOpen(true)}
         onOpenHelp={() => setHelpOpen(true)}
-        onNewGame={() => actions.reset()}
+        onNewGame={() => setStartOpen(true)}
       />
 
       {/* DOM-ordningen är mobilens läsordning; .layout är ett grid som flyttar
@@ -78,15 +83,15 @@ export default function App() {
         <WordsCard state={state} />
       </div>
 
-      {state.phase === "idle" && welcome && (
+      {welcome && (
         <Welcome
-          onPlay={() => setWelcome(false)}
+          onPlay={() => setStartOpen(true)}
           onOpenHighscores={() => setHsOpen(true)}
           onOpenHelp={() => setHelpOpen(true)}
         />
       )}
 
-      {state.phase === "idle" && !welcome && (
+      {startOpen && (
         <StartDialog
           lang={state.lang}
           mode={startMode}
@@ -94,8 +99,18 @@ export default function App() {
           startError={startError}
           onSetLang={actions.setLang}
           onSetMode={setStartMode}
-          onStart={() => start(startMode)}
-          onOpenHighscores={() => setHsOpen(true)}
+          onStart={async () => {
+            // Nollställ och bygg spelet först här. Vid lyckad start lämnar vi
+            // både dialogen och välkomstsidan; vid fel stannar dialogen kvar
+            // (startError visas). Avbryt (onCancel) återgår i stället orört:
+            // till välkomstsidan om den ligger kvar, annars till pågående spel.
+            const ok = await start(startMode);
+            if (ok) {
+              setStartOpen(false);
+              setWelcome(false);
+            }
+          }}
+          onCancel={() => setStartOpen(false)}
           onOpenHelp={() => setHelpOpen(true)}
         />
       )}
