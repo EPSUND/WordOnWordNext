@@ -4,6 +4,7 @@ import { useTileSize } from "./hooks/useTileSize";
 import { TOTAL_BLOCKS } from "./lib/engine/constants";
 import type { GameMode } from "./lib/types";
 import Header from "./components/Header";
+import Welcome from "./components/Welcome";
 import Board from "./components/board/Board";
 import DropZone from "./components/board/DropZone";
 import StatusCard from "./components/panel/StatusCard";
@@ -19,6 +20,9 @@ export default function App() {
   const { state, start, starting, startError, actions } = useGame();
   const tile = useTileSize();
   const [startMode, setStartMode] = useState<GameMode>("random");
+  // Välkomstsidan visas bara vid första besöket. När den lämnas (Spela) tas den
+  // aldrig tillbaka – "Nytt spel" från headern går direkt till StartDialog.
+  const [welcome, setWelcome] = useState(true);
   const [hsOpen, setHsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [endClosed, setEndClosed] = useState(false);
@@ -74,7 +78,15 @@ export default function App() {
         <WordsCard state={state} />
       </div>
 
-      {state.phase === "idle" && (
+      {state.phase === "idle" && welcome && (
+        <Welcome
+          onPlay={() => setWelcome(false)}
+          onOpenHighscores={() => setHsOpen(true)}
+          onOpenHelp={() => setHelpOpen(true)}
+        />
+      )}
+
+      {state.phase === "idle" && !welcome && (
         <StartDialog
           lang={state.lang}
           mode={startMode}
