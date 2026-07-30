@@ -20,6 +20,12 @@
 /* Ljus kalenderikon på den mörka bakgrunden. */
 .hsdatenav input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7;cursor:pointer}
 
+/* Sökraden: ett namnfält som växer + en sökknapp. Fältet ärver dialogens
+   delade input[type=text]-stil; här styr vi bara layouten i raden. */
+.hssearchrow{display:flex;gap:8px;margin-top:10px}
+.hssearchrow input[type="text"]{flex:1;width:auto}
+.hssearchrow button{flex:0 0 auto}
+
 @media (pointer:coarse){
   .hsdatenav button{min-height:44px}
   .hsdatenav input[type="date"]{min-height:44px}

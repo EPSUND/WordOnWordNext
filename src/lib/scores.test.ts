@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScoreEntry } from "./types";
-import { loadDailyScores, loadForMode, loadScores, submitScore } from "./scores";
+import {
+  loadDailyScores,
+  loadForMode,
+  loadScoreRank,
+  loadScores,
+  loadScoresByName,
+  submitScore,
+} from "./scores";
 
 /* Inga riktiga nätverksanrop – vi kontrollerar URL:er, body och felhantering.
    Topplistan ska kasta vid fel (ingen tyst fallback), felen visas i dialogerna. */
@@ -81,6 +88,53 @@ describe("loadDailyScores", () => {
   it("URL-kodar parametrarna", async () => {
     await loadDailyScores("2024-01-01&injected=1", "sv");
     expect(lastUrl()).toContain("2024-01-01%26injected%3D1");
+  });
+});
+
+describe("loadScoresByName", () => {
+  it("filtrerar på namn (skiftlägesokänsligt) och språk, sorterat på poäng", async () => {
+    await loadScoresByName("Erik", "sv");
+    const url = lastUrl();
+    expect(url).toContain("name=ilike.Erik");
+    expect(url).toContain("language=eq.sv");
+    expect(url).toContain("order=score.desc");
+    expect(url).toContain("limit=200");
+  });
+
+  it("escapar SQL-wildcards i namnet så de matchas bokstavligt", async () => {
+    await loadScoresByName("50%_x", "sv");
+    // % _ blir \% \_ och URL-kodas.
+    expect(lastUrl()).toContain("name=ilike.50%5C%25%5C_x");
+  });
+});
+
+describe("loadScoreRank", () => {
+  const withCount = (total: number) =>
+    new Response(JSON.stringify([{ id: 1 }]), {
+      status: 206,
+      headers: { "Content-Range": `0-0/${total}`, "Content-Type": "application/json" },
+    });
+
+  it("räknar resultat med högre poäng i samma språk och begär count", async () => {
+    fetchMock.mockResolvedValueOnce(withCount(41));
+    await loadScoreRank(120, "sv");
+    const url = lastUrl();
+    expect(url).toContain("score=gt.120");
+    expect(url).toContain("language=eq.sv");
+    const headers = lastInit().headers as Record<string, string>;
+    expect(headers.Prefer).toContain("count=exact");
+  });
+
+  it("placering = antal med högre poäng + 1", async () => {
+    fetchMock.mockResolvedValueOnce(withCount(41));
+    await expect(loadScoreRank(120, "sv")).resolves.toBe(42);
+  });
+
+  it("ger placering 1 när inget ligger över", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("[]", { status: 206, headers: { "Content-Range": "*/0" } }),
+    );
+    await expect(loadScoreRank(999, "sv")).resolves.toBe(1);
   });
 });
 

@@ -33,6 +33,44 @@ export function loadScores(lang: Lang): Promise<ScoreEntry[]> {
   );
 }
 
+/** Alla resultat för ett givet namn (skiftlägesokänsligt) i ett språk. */
+export function loadScoresByName(name: string, lang: Lang): Promise<ScoreEntry[]> {
+  // ilike utan wildcards = exakt men skiftlägesokänslig träff. Escapa de tecken
+  // som annars vore SQL-wildcards (%, _) och PostgREST:s egen wildcard (*), så att
+  // ett namn som råkar innehålla dem matchas bokstavligt.
+  const literal = name.replace(/[%_*\\]/g, "\\$&");
+  return fetchScores(
+    `name=ilike.${encodeURIComponent(literal)}&language=eq.${encodeURIComponent(
+      lang,
+    )}&order=score.desc&limit=200`,
+  );
+}
+
+/** Global placering (1-baserad) för en viss poäng i språkets topplista:
+    antalet resultat med högre poäng + 1. Samma poäng delar placering.
+    Räknas via PostgREST:s `count=exact` (totalen i Content-Range-headern), så
+    det funkar även för placeringar bortom de 200 som listorna hämtar. */
+export async function loadScoreRank(score: number, lang: Lang): Promise<number> {
+  const q = `select=id&language=eq.${encodeURIComponent(lang)}&score=gt.${encodeURIComponent(
+    String(score),
+  )}`;
+  let r: Response;
+  try {
+    r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}?${q}`, {
+      headers: { ...SUPA_HEADERS, Prefer: "count=exact", Range: "0-0" },
+    });
+  } catch {
+    throw new Error("Kunde inte nå topplistan (nätverksfel).");
+  }
+  // 206 Partial Content är normalt när Range är satt.
+  if (!r.ok && r.status !== 206) {
+    throw new Error("Topplistan svarade med fel (" + r.status + ").");
+  }
+  // Content-Range: "0-0/1234" (eller "*/0" när inget ligger över).
+  const above = Number((r.headers.get("content-range") || "").split("/")[1]);
+  return (Number.isFinite(above) ? above : 0) + 1;
+}
+
 /** En specifik dags dagliga spel, ett språk. */
 export function loadDailyScores(dateStr: string, lang: Lang): Promise<ScoreEntry[]> {
   return fetchScores(

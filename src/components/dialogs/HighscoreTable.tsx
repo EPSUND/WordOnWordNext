@@ -8,6 +8,8 @@ interface Props {
   loading: boolean;
   error: string | null;
   highlightIdx?: number | null;
+  /** Global placering per poäng (sökläget). Utan den är radens position placeringen. */
+  rankByScore?: Map<number, number> | null;
 }
 
 const PAGE_SIZE = 10;
@@ -24,7 +26,13 @@ function fmtWhen(iso: string | null): string {
   return `${date} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export default function HighscoreTable({ entries, loading, error, highlightIdx }: Props) {
+export default function HighscoreTable({
+  entries,
+  loading,
+  error,
+  highlightIdx,
+  rankByScore,
+}: Props) {
   const sorted = (entries ?? []).slice().sort((a, b) => b.score - a.score);
   const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
 
@@ -111,7 +119,7 @@ export default function HighscoreTable({ entries, loading, error, highlightIdx }
                       }
                     }}
                   >
-                    <td>{rank + 1}</td>
+                    <td>{rankByScore ? (rankByScore.get(e.score) ?? "–") : rank + 1}</td>
                     <td>{clean(e.name || "")}</td>
                     <td>{e.score}</td>
                     <td>{clean(e.bestWord || "–")}</td>
