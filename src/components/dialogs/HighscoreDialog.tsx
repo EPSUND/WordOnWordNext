@@ -42,7 +42,7 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
         ? viewDate
           ? loadDailyScores(viewDate, viewLang)
           : Promise.resolve([])
-        : loadScores().then((list) => list.filter((e) => e.lang === viewLang));
+        : loadScores(viewLang);
     p.then((list) => {
       if (my === reqRef.current) {
         setEntries(list);

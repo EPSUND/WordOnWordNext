@@ -34,8 +34,8 @@ const lastUrl = () => String(fetchMock.mock.calls.at(-1)![0]);
 const lastInit = () => fetchMock.mock.calls.at(-1)![1] as RequestInit;
 
 describe("loadScores", () => {
-  it("frågar tabellen wow_scores sorterat på poäng med kolumnalias", async () => {
-    await loadScores();
+  it("frågar tabellen wow_scores filtrerat på språk och sorterat på poäng med kolumnalias", async () => {
+    await loadScores("sv");
     const url = lastUrl();
     expect(url).toContain("/rest/v1/wow_scores?");
     expect(url).toContain("words:word_count");
@@ -43,12 +43,13 @@ describe("loadScores", () => {
     expect(url).toContain("bestWord:best_word");
     expect(url).toContain("daily:daily_game_date");
     expect(url).toContain("created:created_at");
+    expect(url).toContain("language=eq.sv");
     expect(url).toContain("order=score.desc");
     expect(url).toContain("limit=200");
   });
 
   it("skickar apikey och Authorization", async () => {
-    await loadScores();
+    await loadScores("sv");
     const headers = lastInit().headers as Record<string, string>;
     expect(headers.apikey).toBeTruthy();
     expect(headers.Authorization).toBe("Bearer " + headers.apikey);
@@ -56,17 +57,17 @@ describe("loadScores", () => {
 
   it("returnerar raderna som de kommer", async () => {
     fetchMock.mockResolvedValueOnce(jsonOk([entry()]));
-    await expect(loadScores()).resolves.toEqual([entry()]);
+    await expect(loadScores("sv")).resolves.toEqual([entry()]);
   });
 
   it("kastar ett begripligt fel vid nätverksfel", async () => {
     fetchMock.mockRejectedValueOnce(new Error("boom"));
-    await expect(loadScores()).rejects.toThrow(/nätverksfel/);
+    await expect(loadScores("sv")).rejects.toThrow(/nätverksfel/);
   });
 
   it("kastar med statuskoden vid API-fel", async () => {
     fetchMock.mockResolvedValueOnce(new Response("nope", { status: 500 }));
-    await expect(loadScores()).rejects.toThrow(/500/);
+    await expect(loadScores("sv")).rejects.toThrow(/500/);
   });
 });
 
@@ -95,11 +96,10 @@ describe("loadForMode", () => {
     expect(lastUrl()).not.toContain("daily_game_date=eq");
   });
 
-  it("filtrerar all-time-listan på språk i klienten", async () => {
-    fetchMock.mockResolvedValueOnce(jsonOk([entry({ lang: "sv" }), entry({ lang: "en" })]));
-    const rows = await loadForMode("random", null, "sv");
-    expect(rows).toHaveLength(1);
-    expect(rows[0].lang).toBe("sv");
+  it("filtrerar all-time-listan på språk i databasen", async () => {
+    await loadForMode("random", null, "sv");
+    expect(lastUrl()).toContain("language=eq.sv");
+    expect(lastUrl()).not.toContain("daily_game_date=eq");
   });
 });
 

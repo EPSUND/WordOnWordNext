@@ -26,9 +26,11 @@ async function fetchScores(params: string): Promise<ScoreEntry[]> {
   return (await r.json()) as ScoreEntry[];
 }
 
-/** All-time-listan (båda lägena). */
-export function loadScores(): Promise<ScoreEntry[]> {
-  return fetchScores("order=score.desc&limit=200");
+/** All-time-listan för ett språk (filtreras i databasen så limiten gäller per språk). */
+export function loadScores(lang: Lang): Promise<ScoreEntry[]> {
+  return fetchScores(
+    `language=eq.${encodeURIComponent(lang)}&order=score.desc&limit=200`,
+  );
 }
 
 /** En specifik dags dagliga spel, ett språk. */
@@ -56,7 +58,7 @@ export async function loadForMode(
   lang: Lang,
 ): Promise<ScoreEntry[]> {
   if (mode === "daily" && dailyDate) return loadDailyScores(dailyDate, lang);
-  return (await loadScores()).filter((e) => e.lang === lang);
+  return loadScores(lang);
 }
 
 export async function submitScore(entry: NewScore): Promise<void> {
