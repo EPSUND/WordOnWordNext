@@ -1,5 +1,5 @@
 import type { Grid, HandTile, Lang, LineWord, Phase, SingleWord, GameMode } from "../lib/types";
-import { COLS, INITIAL_BLOCKS, ROWS, TOTAL_BLOCKS } from "../lib/engine/constants";
+import { COLS, INITIAL_BLOCKS, ROWS, TOTAL_BLOCKS, UNDO_LIMIT } from "../lib/engine/constants";
 import { collapseColumn, emptyGrid, ensureColPlayable, landingRow } from "../lib/engine/grid";
 import { computeSingles, scanLine, scoreAndCount } from "../lib/engine/words";
 
@@ -58,11 +58,12 @@ export interface GameState {
   soundPlingLen: number;
   shake: number;
   /** Ögonblicksbild av play-läget precis före det senaste släppet, för Ångra drag.
-   *  null tills ett drag gjorts. Se "undo" nedan. */
+   *  null tills ett drag gjorts, och nollas av ett "undo": man kommer alltid bara
+   *  ett drag tillbaka, aldrig längre, och samma drag går inte att ångra två gånger. */
   undoSnapshot: GameState | null;
-  /** Ångra får bara användas en gång per spelomgång (annars kan man tjuvkika på
-   *  nästa bricka genom att släppa och ångra om och om igen). */
-  undoUsed: boolean;
+  /** Antal ångra-drag som återstår (börjar på UNDO_LIMIT). Begränsat för att man
+   *  annars kan tjuvkika på nästa bricka genom att släppa och ångra om och om igen. */
+  undosLeft: number;
 }
 
 export type Action =
@@ -116,7 +117,7 @@ export const initialState: GameState = {
   soundPlingLen: 0,
   shake: 0,
   undoSnapshot: null,
-  undoUsed: false,
+  undosLeft: UNDO_LIMIT,
 };
 
 let floatSeq = 0;
@@ -331,9 +332,9 @@ export function reducer(s: GameState, a: Action): GameState {
       const row = landingRow(s.grid, s.currentCol);
       if (row < 0) return { ...s, shake: s.shake + 1 };
       // Spara play-läget precis före släppet så att "undo" kan återställa det. Bara
-      // meningsfullt medan ångra fortfarande finns kvar; snapshoten hålls platt
-      // (egen undoSnapshot nollad) så den inte kapslar in tidigare drag.
-      const undoSnapshot = s.undoUsed ? s.undoSnapshot : { ...s, undoSnapshot: null };
+      // meningsfullt medan ångra finns kvar; snapshoten hålls platt (egen undoSnapshot
+      // nollad) så den inte kapslar in tidigare drag – man går alltid bara ett steg bakåt.
+      const undoSnapshot = s.undosLeft > 0 ? { ...s, undoSnapshot: null } : null;
       return {
         ...s,
         undoSnapshot,
@@ -384,11 +385,13 @@ export function reducer(s: GameState, a: Action): GameState {
     }
 
     case "undo": {
-      // Bara i play-läget, bara om ett drag finns att ångra och ångra inte redan använts.
-      if (s.phase !== "play" || !s.undoSnapshot || s.undoUsed) return s;
+      // Bara i play-läget, bara om ett drag finns att ångra och ångra finns kvar.
+      if (s.phase !== "play" || s.undosLeft <= 0 || !s.undoSnapshot) return s;
       return {
         ...s.undoSnapshot,
-        undoUsed: true,
+        undosLeft: s.undosLeft - 1,
+        // Snapshoten förbrukas: samma drag går inte att ångra igen, och man kan
+        // inte gå vidare bakåt – nästa ångra kräver ett nytt släpp.
         undoSnapshot: null,
         // Behåll de monotona ljud-/skakräknarna så inga effekter återutlöses.
         soundThud: s.soundThud,

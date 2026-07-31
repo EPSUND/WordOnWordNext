@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadRealDicts } from "../test/dictFixture";
-import { COLS, INITIAL_BLOCKS, ROWS, TOTAL_BLOCKS } from "../lib/engine/constants";
+import { COLS, INITIAL_BLOCKS, ROWS, TOTAL_BLOCKS, UNDO_LIMIT } from "../lib/engine/constants";
 import { type Action, type GameState, initialState, reducer } from "./reducer";
 
 beforeAll(async () => {
@@ -328,6 +328,7 @@ describe("spelets slut", () => {
 describe("undo", () => {
   it("kan inte ångra innan ett drag har gjorts", () => {
     const play = toPlay(started());
+    expect(play.undosLeft).toBe(UNDO_LIMIT);
     expect(play.undoSnapshot).toBeNull();
     expect(reducer(play, { type: "undo" })).toBe(play);
   });
@@ -346,8 +347,8 @@ describe("undo", () => {
     expect(undone.nextLetter).toBe(play.nextLetter); // gamla nästa-brickan igen
     expect(undone.bagIndex).toBe(play.bagIndex);
     expect(undone.score).toBe(play.score);
-    expect(undone.undoUsed).toBe(true);
-    expect(undone.undoSnapshot).toBeNull();
+    expect(undone.undosLeft).toBe(UNDO_LIMIT - 1);
+    expect(undone.undoSnapshot).toBeNull(); // förbrukad – kräver ett nytt släpp
   });
 
   it("återställer poäng och ordlista när det ångrade draget bildade ett ord", () => {
@@ -360,16 +361,31 @@ describe("undo", () => {
     expect(undone.numWords).toBe(play.numWords);
   });
 
-  it("går bara att ångra en gång per spelomgång", () => {
-    const play = toPlay(started());
-    const after = dropIn(play, 6);
-    const undone = reducer(after, { type: "undo" });
-    expect(undone.undoUsed).toBe(true);
-
-    // Nästa släpp får inte spara någon ny ögonblicksbild.
-    const next = dropIn(undone, 5);
+  it("går att ångra UNDO_LIMIT gånger per spelomgång, sedan inte mer", () => {
+    let cur = toPlay(started());
+    for (let i = 0; i < UNDO_LIMIT; i++) {
+      cur = reducer(dropIn(cur, 6), { type: "undo" });
+      expect(cur.undosLeft).toBe(UNDO_LIMIT - 1 - i);
+    }
+    // Ångra förbrukat: nya släpp får inte spara någon ny ögonblicksbild.
+    const next = dropIn(cur, 5);
     expect(next.undoSnapshot).toBeNull();
     expect(reducer(next, { type: "undo" })).toBe(next);
+  });
+
+  it("går aldrig mer än ett drag tillbaka", () => {
+    const play = toPlay(started(bag("K", "A", "T", "T", "B", "O", "S", "R")));
+    const first = dropIn(play, 6);
+    const second = dropIn(first, 5);
+
+    const backOne = reducer(second, { type: "undo" });
+    expect(backOne.grid[ROWS - 1][5]).toBeNull();
+    expect(backOne.grid[ROWS - 1][6]).toBe(play.currentLetter); // första draget ligger kvar
+    expect(backOne.currentLetter).toBe(first.currentLetter);
+
+    // Redan ångrat det draget: nästa ångra är blockerat tills man släppt igen.
+    expect(reducer(backOne, { type: "undo" })).toBe(backOne);
+    expect(backOne.undosLeft).toBe(UNDO_LIMIT - 1);
   });
 
   it("återutlöser inte ljud eller skak vid ångra", () => {

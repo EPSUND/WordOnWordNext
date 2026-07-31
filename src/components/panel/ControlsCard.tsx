@@ -32,8 +32,10 @@ export default function ControlsCard({
     !state.isJokerTile
   );
 
-  // Ångra göms när det förbrukats; annars aktivt så snart ett drag finns att ångra.
-  const undoHidden = state.undoUsed;
+  // Ångra göms när alla användningar är förbrukade; annars aktivt så snart ett
+  // oångrat drag finns att ta tillbaka (snapshoten nollas av ett undo, så samma
+  // drag går inte att ångra två gånger). Antalet kvar visas på knappen.
+  const undoHidden = state.undosLeft <= 0;
   const undoDisabled = !(state.phase === "play" && state.undoSnapshot != null);
 
   // Verbet skiljer sig: på touch trycker man, med mus klickar man.
@@ -92,7 +94,11 @@ export default function ControlsCard({
       {state.phase !== "over" && !undoHidden && (
         <button className="undobtn" disabled={undoDisabled} onClick={onUndo}>
           <Icon name="undo" className="btnicon lead" />
-          Ångra drag {!coarse && <kbd>Z</kbd>}
+          Ångra drag
+          <span className="undoleft" title={`${state.undosLeft} ångra kvar`}>
+            {state.undosLeft}
+          </span>
+          {!coarse && <kbd>Z</kbd>}
         </button>
       )}
       {state.phase === "over" && onShowResult && (

@@ -4,6 +4,10 @@ export const COLS = 7;
 export const ROWS = 7;
 export const TOTAL_BLOCKS = COLS * ROWS - 1; // 48 – jokern är den 49:e
 export const INITIAL_BLOCKS = 5; // som i originalet
+/** Antal ångra-drag per spelomgång. Begränsat med flit: med obegränsat ångra
+   kan man tjuvkika på nästa bricka genom att släppa och ångra om och om igen.
+   Ändra här för att justera generositeten – UI och reducer följer med. */
+export const UNDO_LIMIT = 3;
 
 /* VIKTIGT: nyckelordningen i FREQ måste bevaras exakt – påsdragningen (bag.ts)
    itererar Object.entries() i insättningsordning, vilket är en del av
