@@ -30,6 +30,8 @@ export interface HandTile {
 
 /** En rad i topplistan (som den kommer från Supabase, med alias). */
 export interface ScoreEntry {
+  /** Radens primärnyckel – enda säkra sättet att peka ut exakt en post. */
+  id: number;
   name: string;
   score: number;
   words: number;

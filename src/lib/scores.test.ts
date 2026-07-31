@@ -13,6 +13,7 @@ import {
    Topplistan ska kasta vid fel (ingen tyst fallback), felen visas i dialogerna. */
 
 const entry = (over: Partial<ScoreEntry> = {}): ScoreEntry => ({
+  id: 1,
   name: "Erik",
   score: 100,
   words: 5,
@@ -45,6 +46,7 @@ describe("loadScores", () => {
     await loadScores("sv");
     const url = lastUrl();
     expect(url).toContain("/rest/v1/wow_scores?");
+    expect(url).toContain("select=id,name,score");
     expect(url).toContain("words:word_count");
     expect(url).toContain("lang:language");
     expect(url).toContain("bestWord:best_word");
@@ -170,6 +172,7 @@ describe("submitScore", () => {
   it("POSTar med databasens kolumnnamn", async () => {
     await submitScore(newScore);
     expect(lastInit().method).toBe("POST");
+    expect(lastUrl()).toContain("select=id");
     expect(JSON.parse(String(lastInit().body))).toEqual({
       name: "Erik",
       score: 120,
@@ -185,6 +188,18 @@ describe("submitScore", () => {
     const body = JSON.parse(String(lastInit().body));
     expect(body.best_word).toBeNull();
     expect(body.daily_game_date).toBeNull();
+  });
+
+  it("begär tillbaka den sparade raden och returnerar dess id", async () => {
+    fetchMock.mockResolvedValueOnce(jsonOk([{ id: 4711 }]));
+    await expect(submitScore(newScore)).resolves.toBe(4711);
+    const headers = lastInit().headers as Record<string, string>;
+    expect(headers.Prefer).toContain("return=representation");
+  });
+
+  it("returnerar null om servern inte skickar tillbaka något id", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("", { status: 201 }));
+    await expect(submitScore(newScore)).resolves.toBeNull();
   });
 
   it("kastar vid nätverksfel", async () => {

@@ -11,7 +11,7 @@ const SUPA_HEADERS: Record<string, string> = {
   "Content-Type": "application/json",
 };
 const HS_SELECT =
-  "select=name,score,words:word_count,lang:language,bestWord:best_word,daily:daily_game_date,created:created_at";
+  "select=id,name,score,words:word_count,lang:language,bestWord:best_word,daily:daily_game_date,created:created_at";
 
 async function fetchScores(params: string): Promise<ScoreEntry[]> {
   let r: Response;
@@ -99,12 +99,16 @@ export async function loadForMode(
   return loadScores(lang);
 }
 
-export async function submitScore(entry: NewScore): Promise<void> {
+/** Sparar ett resultat och returnerar radens id, så att anroparen kan peka ut
+    exakt den posten i den omladdade listan (namn + poäng räcker inte – samma
+    spelare kan ha flera resultat med samma poäng). Returnerar null om servern
+    mot förmodan inte skickar tillbaka raden; poängen är sparad ändå. */
+export async function submitScore(entry: NewScore): Promise<number | null> {
   let r: Response;
   try {
-    r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}`, {
+    r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}?select=id`, {
       method: "POST",
-      headers: { ...SUPA_HEADERS, Prefer: "return=minimal" },
+      headers: { ...SUPA_HEADERS, Prefer: "return=representation" },
       body: JSON.stringify({
         name: entry.name,
         score: entry.score,
@@ -118,4 +122,11 @@ export async function submitScore(entry: NewScore): Promise<void> {
     throw new Error("Kunde inte spara poängen (nätverksfel).");
   }
   if (!r.ok) throw new Error("Poängen kunde inte sparas (" + r.status + ").");
+  try {
+    const rows = (await r.json()) as { id?: number }[];
+    const id = Array.isArray(rows) ? rows[0]?.id : undefined;
+    return typeof id === "number" ? id : null;
+  } catch {
+    return null;
+  }
 }

@@ -58,8 +58,9 @@ export default function EndDialog({
     const finalName = name.trim().slice(0, 18) || "Anonym";
     setSaving(true);
     setSaveError(null);
+    let newId: number | null = null;
     try {
-      await submitScore({ name: finalName, score, words: numWords, lang, bestWord, daily: mode === "daily" ? dailyDate : null });
+      newId = await submitScore({ name: finalName, score, words: numWords, lang, bestWord, daily: mode === "daily" ? dailyDate : null });
     } catch (e) {
       setSaveError((e instanceof Error ? e.message : "Fel") + " Försök igen.");
       setSaving(false);
@@ -69,7 +70,21 @@ export default function EndDialog({
     try {
       const list = await loadForMode(mode, dailyDate, lang);
       const sorted = [...list].sort((a, b) => b.score - a.score);
-      const idx = sorted.findIndex((e) => e.score === score && e.name === finalName);
+      // Peka ut raden på id. Namn + poäng räcker inte: har man redan ett
+      // resultat med samma poäng markerades den gamla raden (med fel bästa ord).
+      // Utan id från servern tas den *senast sparade* av de matchande raderna.
+      const idx =
+        newId != null
+          ? sorted.findIndex((e) => e.id === newId)
+          : sorted.reduce(
+              (best, e, i) =>
+                e.score === score &&
+                e.name === finalName &&
+                (best < 0 || (e.created ?? "") > (sorted[best].created ?? ""))
+                  ? i
+                  : best,
+              -1,
+            );
       setEntries(list);
       setError(null);
       // Absolut placering (inte bara topp 10): tabellen bläddrar själv till
