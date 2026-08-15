@@ -163,8 +163,13 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
 
 ## 8. Externa tjänster – Supabase
 
+- **Schemat bor i Supabase, inte i repot.** `docs/supabase.md` är facit över tabellen, vyn och
+  RLS:en – uppdatera den när databasen ändras.
 - URL: `https://vvspqfbvxuimxcbyyahw.supabase.co`, tabell **`wow_scores`**.
 - Kolumner: `id, name, score, word_count, language, best_word, daily_game_date, created_at`.
+- Vyn **`wow_best_player_scores`** (`DISTINCT ON`, samma kolumner som tabellen) ger ett resultat
+  per spelare och driver Rekord-läget i topplistan. PostgREST kan inte uttrycka det i en query –
+  se `docs/supabase.md` för SQL:en och varför.
 - REST-anropen (i `src/lib/scores.ts`) läser med alias:
   `select=name,score,words:word_count,lang:language,bestWord:best_word,daily:daily_game_date`.
 - RLS: anon får `SELECT` och `INSERT`; `DELETE`/`UPDATE` är blockerat.

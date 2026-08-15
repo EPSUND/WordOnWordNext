@@ -5,6 +5,9 @@ import type { GameMode, Lang, ScoreEntry } from "./types";
 const SUPA_URL = "https://vvspqfbvxuimxcbyyahw.supabase.co";
 const SUPA_KEY = "sb_publishable_-T5PvrE5hwqAPqiJ1JcKcQ_ZkrOPTHm";
 const SUPA_TABLE = "wow_scores";
+/* Vy över wow_scores med ett resultat per spelare (deras bästa). Definitionen –
+   och varför den behövs – står i docs/supabase.md. */
+const SUPA_BEST_VIEW = "wow_best_player_scores";
 const SUPA_HEADERS: Record<string, string> = {
   apikey: SUPA_KEY,
   Authorization: "Bearer " + SUPA_KEY,
@@ -13,10 +16,10 @@ const SUPA_HEADERS: Record<string, string> = {
 const HS_SELECT =
   "select=id,name,score,words:word_count,lang:language,bestWord:best_word,daily:daily_game_date,created:created_at";
 
-async function fetchScores(params: string): Promise<ScoreEntry[]> {
+async function fetchScores(params: string, relation = SUPA_TABLE): Promise<ScoreEntry[]> {
   let r: Response;
   try {
-    r = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}?${HS_SELECT}&${params}`, {
+    r = await fetch(`${SUPA_URL}/rest/v1/${relation}?${HS_SELECT}&${params}`, {
       headers: SUPA_HEADERS,
     });
   } catch {
@@ -33,33 +36,14 @@ export function loadScores(lang: Lang): Promise<ScoreEntry[]> {
   );
 }
 
-/* Rekordlistan hämtar ett bredare spann än de 200 som visas, eftersom raderna
-   tunnas ut till en per spelare. Spelare vars alla resultat ligger utanför
-   spannet kommer inte med – de hade ändå inte nått in på listan. */
-const RECORDS_SCAN_LIMIT = 1000;
-
-/** Behåller bästa resultatet per namn. Namn jämförs trimmat och skiftlägesokänsligt,
-    precis som sökningen (ilike), så "Erik" och "erik" är samma spelare. */
-export function bestPerName(rows: ScoreEntry[]): ScoreEntry[] {
-  const seen = new Set<string>();
-  const out: ScoreEntry[] = [];
-  // Sortera själva – ordningen från servern får inte vara det som avgör "bäst".
-  for (const e of rows.slice().sort((a, b) => b.score - a.score)) {
-    const key = (e.name || "").trim().toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(e);
-  }
-  return out;
-}
-
-/** Rekordlistan: ett resultat per spelare (deras bästa) i ett språk.
-    PostgREST saknar DISTINCT ON, så uttunningen sker i klienten. */
-export async function loadRecords(lang: Lang): Promise<ScoreEntry[]> {
-  const rows = await fetchScores(
-    `language=eq.${encodeURIComponent(lang)}&order=score.desc&limit=${RECORDS_SCAN_LIMIT}`,
+/** Ett resultat per spelare (deras bästa) i ett språk. Uttunningen görs av vyn
+    (DISTINCT ON per språk och normaliserat namn), som har samma kolumner som
+    tabellen – limiten gäller alltså redan uttunnade rader. */
+export function loadBestPlayerScores(lang: Lang): Promise<ScoreEntry[]> {
+  return fetchScores(
+    `language=eq.${encodeURIComponent(lang)}&order=score.desc&limit=200`,
+    SUPA_BEST_VIEW,
   );
-  return bestPerName(rows);
 }
 
 /** Alla resultat för ett givet namn (skiftlägesokänsligt) i ett språk. */

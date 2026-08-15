@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameMode, Lang, ScoreEntry } from "../../lib/types";
 import {
+  loadBestPlayerScores,
   loadDailyScores,
-  loadRecords,
   loadScoreRank,
   loadScores,
   loadScoresByName,
@@ -28,7 +28,7 @@ interface Props {
   onClose: () => void;
 }
 
-type ViewMode = "all" | "records" | "daily" | "search";
+type ViewMode = "all" | "best" | "daily" | "search";
 
 export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onClose }: Props) {
   const [viewLang, setViewLang] = useState<Lang>(initialLang);
@@ -65,8 +65,8 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
       if (viewMode === "daily") {
         return { list: viewDate ? await loadDailyScores(viewDate, viewLang) : [], ranks: null };
       }
-      if (viewMode === "records") {
-        return { list: await loadRecords(viewLang), ranks: null };
+      if (viewMode === "best") {
+        return { list: await loadBestPlayerScores(viewLang), ranks: null };
       }
       if (viewMode === "search") {
         const list = await loadScoresByName(searchTerm, viewLang);
@@ -115,10 +115,7 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
         <button className={viewMode === "all" ? "sel" : ""} onClick={() => setViewMode("all")}>
           Alla
         </button>
-        <button
-          className={viewMode === "records" ? "sel" : ""}
-          onClick={() => setViewMode("records")}
-        >
+        <button className={viewMode === "best" ? "sel" : ""} onClick={() => setViewMode("best")}>
           Rekord
         </button>
         <button className={viewMode === "daily" ? "sel" : ""} onClick={() => setViewMode("daily")}>
@@ -128,7 +125,7 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
           Sök
         </button>
       </div>
-      {viewMode === "records" && <p className="hshint">Bästa resultat per spelare.</p>}
+      {viewMode === "best" && <p className="hshint">Bästa resultat per spelare.</p>}
       {viewMode === "search" && (
         <form
           className="hssearchrow"

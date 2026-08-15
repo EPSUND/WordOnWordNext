@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScoreEntry } from "./types";
 import {
-  bestPerName,
+  loadBestPlayerScores,
   loadDailyScores,
   loadForMode,
-  loadRecords,
   loadScoreRank,
   loadScores,
   loadScoresByName,
@@ -95,62 +94,34 @@ describe("loadDailyScores", () => {
   });
 });
 
-describe("bestPerName", () => {
-  it("behåller bara spelarens bästa resultat", () => {
-    const rows = [
-      entry({ id: 1, name: "Erik", score: 150 }),
-      entry({ id: 2, name: "Anna", score: 120 }),
-      entry({ id: 3, name: "Erik", score: 90 }),
-    ];
-    expect(bestPerName(rows).map((e) => e.id)).toEqual([1, 2]);
-  });
-
-  it("räknar namn skiftlägesokänsligt och trimmat som samma spelare", () => {
-    const rows = [
-      entry({ id: 1, name: " erik ", score: 90 }),
-      entry({ id: 2, name: "ERIK", score: 200 }),
-    ];
-    const out = bestPerName(rows);
-    expect(out).toHaveLength(1);
-    expect(out[0].id).toBe(2);
-  });
-
-  it("sorterar själv, oavsett ordningen den får raderna i", () => {
-    const rows = [
-      entry({ id: 1, name: "Anna", score: 50 }),
-      entry({ id: 2, name: "Erik", score: 300 }),
-      entry({ id: 3, name: "Anna", score: 180 }),
-    ];
-    expect(bestPerName(rows).map((e) => e.id)).toEqual([2, 3]);
-  });
-});
-
-describe("loadRecords", () => {
-  it("hämtar ett bredare spann per språk, sorterat på poäng", async () => {
-    await loadRecords("sv");
+describe("loadBestPlayerScores", () => {
+  /* Uttunningen till ett resultat per spelare görs av databasvyn (se
+     docs/supabase.md) – här kontrollerar vi bara att vi frågar rätt relation. */
+  it("frågar vyn wow_best_player_scores, inte tabellen", async () => {
+    await loadBestPlayerScores("sv");
     const url = lastUrl();
-    expect(url).toContain("language=eq.sv");
-    expect(url).toContain("order=score.desc");
-    expect(url).toContain("limit=1000");
+    expect(url).toContain("/rest/v1/wow_best_player_scores?");
+    expect(url).not.toContain("/rest/v1/wow_scores?");
   });
 
-  it("returnerar en rad per spelare", async () => {
-    fetchMock.mockResolvedValueOnce(
-      jsonOk([
-        entry({ id: 1, name: "Erik", score: 150 }),
-        entry({ id: 2, name: "Erik", score: 140 }),
-        entry({ id: 3, name: "Anna", score: 130 }),
-      ]),
-    );
-    await expect(loadRecords("sv")).resolves.toEqual([
-      entry({ id: 1, name: "Erik", score: 150 }),
-      entry({ id: 3, name: "Anna", score: 130 }),
-    ]);
+  it("filtrerar på språk och sorterar på poäng, med samma kolumnalias som tabellen", async () => {
+    await loadBestPlayerScores("en");
+    const url = lastUrl();
+    expect(url).toContain("language=eq.en");
+    expect(url).toContain("order=score.desc");
+    expect(url).toContain("limit=200");
+    expect(url).toContain("bestWord:best_word");
+    expect(url).toContain("created:created_at");
+  });
+
+  it("returnerar raderna som de kommer", async () => {
+    fetchMock.mockResolvedValueOnce(jsonOk([entry()]));
+    await expect(loadBestPlayerScores("sv")).resolves.toEqual([entry()]);
   });
 
   it("kastar vid API-fel (ingen tyst fallback)", async () => {
     fetchMock.mockResolvedValueOnce(new Response("nope", { status: 500 }));
-    await expect(loadRecords("sv")).rejects.toThrow(/500/);
+    await expect(loadBestPlayerScores("sv")).rejects.toThrow(/500/);
   });
 });
 
