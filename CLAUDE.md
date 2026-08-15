@@ -111,6 +111,11 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
   ett annat ord.
 - **Arrangeringsfasen**: klick placerar vald bricka på nedersta lediga ruta i kolumnen; klick på
   placerad bricka plockar upp den och kolumnen faller ihop (inga luckor).
+- **Slutjokern**: är jokern oanvänd när påsen är tom blir den sista draget. Spelet går då **inte**
+  direkt in i jokerdialogen utan står kvar i `play` *utan serverad bricka* (`jokerIsLastTile`), så
+  att brädet går att analysera i lugn och ro; spelaren öppnar själv dialogen via "Använd joker"
+  (`canUseJoker`) och kan avbryta den som vanligt. En gul notis i kontrollkortet förklarar att
+  jokern måste läggas. Spelet tar slut först när jokern landat.
 - **Bokstavsfördelning i påsen** (`bag.ts` → `makeBag`): ska vara *språkligt rimlig* (ovanliga
   bokstäver ovanliga) men *tillfredsställande* – man ska sällan få väldigt många av samma bokstav
   och vokaler/konsonanter ska inte klustras. Tre steg, allt deterministiskt givet `rng`:

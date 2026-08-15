@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useGame } from "./hooks/useGame";
 import { useTileSize } from "./hooks/useTileSize";
-import { TOTAL_BLOCKS } from "./lib/engine/constants";
 import type { GameMode } from "./lib/types";
 import Header from "./components/Header";
 import Welcome from "./components/Welcome";
@@ -116,11 +115,13 @@ export default function App() {
       )}
 
       {state.phase === "joker" && (
+        // Ingen serverad bricka ⇒ påsen är tom och jokern är sista draget. Dialogen
+        // går att stänga även då (spelaren öppnade den själv – se ControlsCard).
         <JokerDialog
-          forced={state.bagIndex >= TOTAL_BLOCKS}
+          last={state.currentLetter == null}
           lang={state.lang}
           onChoose={actions.chooseJoker}
-          onCancel={state.bagIndex >= TOTAL_BLOCKS ? undefined : actions.cancelJoker}
+          onCancel={actions.cancelJoker}
         />
       )}
 

@@ -1,7 +1,14 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadRealDicts } from "../test/dictFixture";
 import { COLS, INITIAL_BLOCKS, ROWS, TOTAL_BLOCKS, UNDO_LIMIT } from "../lib/engine/constants";
-import { type Action, type GameState, initialState, reducer } from "./reducer";
+import {
+  type Action,
+  canUseJoker,
+  type GameState,
+  initialState,
+  jokerIsLastTile,
+  reducer,
+} from "./reducer";
 
 beforeAll(async () => {
   await loadRealDicts("sv", "en");
@@ -271,18 +278,26 @@ describe("joker", () => {
     expect(s.isJokerTile).toBe(false);
   });
 
-  it("går inte att ångra den tvingade slutjokern", () => {
-    // playOut definieras nedan i "spelets slut"; återskapa den minimala uppställningen här.
-    const forced = { ...toPlay(started()), phase: "joker" as const, bagIndex: TOTAL_BLOCKS };
-    expect(reducer(forced, { type: "cancelJoker" })).toBe(forced);
+  it("går att ångra även slutjokern, utan att rubba brickräknaren", () => {
+    // Sista draget: påsen tom, ingen serverad bricka (se "spelets slut" nedan).
+    const last = { ...toPlay(started()), bagIndex: TOTAL_BLOCKS, currentLetter: null };
+    const opened = reducer(last, { type: "useJoker" });
+    expect(opened.phase).toBe("joker");
+    expect(opened.bagIndex).toBe(TOTAL_BLOCKS);
+    const s = reducer(opened, { type: "cancelJoker" });
+    expect(s.phase).toBe("play");
+    expect(s.bagIndex).toBe(TOTAL_BLOCKS);
+    expect(s.currentLetter).toBeNull();
+    expect(jokerIsLastTile(s)).toBe(true);
   });
 });
 
 describe("spelets slut", () => {
-  /** Spelar ut hela påsen genom att fördela brickorna över kolumnerna. */
+  /** Spelar ut hela påsen genom att fördela brickorna över kolumnerna. Stannar när
+   *  det inte finns någon serverad bricka kvar (sista draget – slutjokern). */
   function playOut(s: GameState) {
     let cur = s;
-    for (let i = 0; cur.phase === "play" && i < TOTAL_BLOCKS + 5; i++) {
+    for (let i = 0; cur.phase === "play" && cur.currentLetter != null && i < TOTAL_BLOCKS + 5; i++) {
       const col = [...Array(COLS).keys()].find(
         (c) => cur.grid.findIndex((row) => row[c] === null) >= 0,
       );
@@ -292,23 +307,36 @@ describe("spelets slut", () => {
     return cur;
   }
 
-  it("erbjuder slutjokern när påsen är slut och jokern är oanvänd", () => {
+  /** Öppnar slutjokern, väljer bokstav och spelar ut den. */
+  const finishWithJoker = (s: GameState, letter = "A") =>
+    playOut(run(s, { type: "useJoker" }, { type: "chooseJoker", letter }));
+
+  it("stannar i play utan bricka när påsen är slut och jokern är oanvänd", () => {
     const s = playOut(toPlay(started()));
     expect(s.bagIndex).toBe(TOTAL_BLOCKS);
-    expect(s.phase).toBe("joker");
+    // Ingen påtvingad dialog: spelaren står kvar vid brädet och öppnar den själv.
+    expect(s.phase).toBe("play");
+    expect(s.currentLetter).toBeNull();
+    expect(s.nextLetter).toBe("🃏");
+    expect(jokerIsLastTile(s)).toBe(true);
+    expect(canUseJoker(s)).toBe(true);
+    expect(reducer(s, { type: "useJoker" }).phase).toBe("joker");
+  });
+
+  it("avslutar inte spelet förrän slutjokern är lagd", () => {
+    const s = playOut(toPlay(started()));
+    // Ingen bricka att släppa – drop/landed får inte råka avsluta spelet.
+    expect(run(s, { type: "drop" }, { type: "landed" }).phase).toBe("play");
   });
 
   it("avslutar spelet när jokern är använd och påsen är slut", () => {
-    let s = playOut(toPlay(started()));
-    s = reducer(s, { type: "chooseJoker", letter: "A" });
-    s = playOut(s);
+    const s = finishWithJoker(playOut(toPlay(started())));
+    expect(s.jokerUsed).toBe(true);
     expect(s.phase).toBe("over");
   });
 
   it("sätter bestWord till det högst poängsatta ordet vid spelets slut", () => {
-    let s = playOut(toPlay(started(bag("K", "A", "T", "T", "X"))));
-    s = reducer(s, { type: "chooseJoker", letter: "A" });
-    s = playOut(s);
+    const s = finishWithJoker(playOut(toPlay(started(bag("K", "A", "T", "T", "X")))));
     expect(s.phase).toBe("over");
     const best = [...s.listedWords].sort((a, b) => b.score - a.score)[0];
     if (best) expect(s.bestWord).toBe(best.word);

@@ -126,7 +126,9 @@ export default function HelpDialog({ lang, onClose }: Props) {
 
       <div className="help-joker">
         <b>Joker</b> – en bricka med valfri bokstav som du kan använda när du vill. Klicka på
-        jokerknappen eller tryck <kbd>J</kbd> (på dator). Den går bara att använda en gång.
+        jokerknappen eller tryck <kbd>J</kbd> (på dator). Den går bara att använda en gång. Har du
+        den kvar när andra brickor är slut är den ditt sista drag – du bestämmer själv när du öppnar
+        jokerväljaren, och spelet tar slut när jokern är lagd.
       </div>
 
       <h2 className="help-h">Poäng</h2>

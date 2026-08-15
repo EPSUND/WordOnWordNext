@@ -4,20 +4,20 @@ import Overlay from "./Overlay";
 import "./JokerDialog.css";
 
 interface Props {
-  forced: boolean;
+  /** Sant när påsen är tom och jokern är sista brickan. */
+  last: boolean;
   lang: Lang;
   onChoose: (letter: string) => void;
-  /** Undefined för den tvingade slutjokern (då finns inget att ångra). */
-  onCancel?: () => void;
+  onCancel: () => void;
 }
 
-export default function JokerDialog({ forced, lang, onChoose, onCancel }: Props) {
+export default function JokerDialog({ last, lang, onChoose, onCancel }: Props) {
   return (
     <Overlay>
-      <h2>{forced ? "Sista brickan – joker!" : "Joker – välj bokstav"}</h2>
+      <h2>{last ? "Sista brickan – joker!" : "Joker – välj bokstav"}</h2>
       <p>
-        {forced
-          ? "Alla vanliga brickor är placerade. Välj vilken bokstav din joker ska vara:"
+        {last
+          ? "Alla vanliga brickor är placerade. Välj vilken bokstav din joker ska vara – eller avbryt och titta på brädet en gång till."
           : "Välj vilken bokstav jokern ska vara. Den blir din nästa bricka."}
       </p>
       <div className="jokergrid">
@@ -27,13 +27,11 @@ export default function JokerDialog({ forced, lang, onChoose, onCancel }: Props)
           </button>
         ))}
       </div>
-      {onCancel && (
-        <div className="btnrow" style={{ marginTop: 12 }}>
-          <button style={{ flex: 1 }} onClick={onCancel}>
-            Avbryt
-          </button>
-        </div>
-      )}
+      <div className="btnrow" style={{ marginTop: 12 }}>
+        <button style={{ flex: 1 }} onClick={onCancel}>
+          Avbryt
+        </button>
+      </div>
     </Overlay>
   );
 }

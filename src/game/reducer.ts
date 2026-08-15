@@ -171,7 +171,7 @@ function bestOverall(s: GameState): string {
   return best ? best.word : "";
 }
 
-/** Servera nästa bricka, eller tvinga slutjoker, eller avsluta. */
+/** Servera nästa bricka, eller lämna över till slutjokern, eller avsluta. */
 function nextTurn(s: GameState): GameState {
   if (s.bagIndex < TOTAL_BLOCKS) {
     const currentLetter = s.bag[s.bagIndex];
@@ -188,10 +188,27 @@ function nextTurn(s: GameState): GameState {
     };
   }
   if (!s.jokerUsed) {
-    return { ...s, phase: "joker" }; // sista brickan är jokern
+    // Sista brickan är jokern. Vi går INTE direkt in i jokerdialogen: spelaren ska
+    // hinna studera brädet i lugn och ro och själv öppna den ("useJoker"), precis
+    // som när jokern används frivilligt. Läget är play utan serverad bricka –
+    // se jokerIsLastTile.
+    return { ...s, currentLetter: null, isJokerTile: false, nextLetter: "🃏", phase: "play" };
   }
   return { ...s, phase: "over", bestWord: bestOverall(s) };
 }
+
+/** Sista draget: påsen är tom, jokern oanvänd och ingen bricka serverad. Jokern
+ *  måste läggas för att spelet ska ta slut, men det är spelaren som öppnar
+ *  dialogen när hen bestämt sig – och som kan stänga den igen. */
+export const jokerIsLastTile = (s: GameState): boolean =>
+  s.phase === "play" && !s.jokerUsed && s.bagIndex >= TOTAL_BLOCKS && s.currentLetter == null;
+
+/** Sant när "Använd joker" är möjligt. Styr både reducerns guard och knappen. */
+export const canUseJoker = (s: GameState): boolean =>
+  s.phase === "play" &&
+  !s.jokerUsed &&
+  !s.isJokerTile &&
+  (s.currentLetter != null || s.bagIndex >= TOTAL_BLOCKS);
 
 /** Efter att en bricka landat: räkna om ord/poäng, ta fram färska ord, kör nästa tur. */
 function afterLand(prev: GameState, r: number, c: number, joker: boolean): GameState {
@@ -360,16 +377,20 @@ export function reducer(s: GameState, a: Action): GameState {
     }
 
     case "useJoker": {
-      if (s.phase !== "play" || s.jokerUsed || s.currentLetter == null || s.isJokerTile) return s;
-      return { ...s, bagIndex: s.bagIndex - 1, phase: "joker" };
+      if (!canUseJoker(s)) return s;
+      // Den serverade brickan läggs tillbaka i påsen och kommer igen efter jokern.
+      // I sista draget finns ingen sådan bricka – då står räknaren stilla.
+      const bagIndex = s.currentLetter == null ? s.bagIndex : s.bagIndex - 1;
+      return { ...s, bagIndex, phase: "joker" };
     }
 
     case "cancelJoker": {
-      // Ångra en frivilligt öppnad joker: återställ brickräknaren som "useJoker"
-      // drog ned och gå tillbaka till play. Den tvingade slutjokern (bagIndex vid
-      // TOTAL_BLOCKS, ingen bricka kvar) går inte att ångra.
-      if (s.phase !== "joker" || s.bagIndex >= TOTAL_BLOCKS) return s;
-      return { ...s, bagIndex: s.bagIndex + 1, phase: "play" };
+      // Stäng jokerdialogen och gå tillbaka till play – även i sista draget, så att
+      // brädet går att studera igen. Brickräknaren som "useJoker" drog ned återställs;
+      // i sista draget fanns ingen bricka att lägga tillbaka och den ska stå kvar.
+      if (s.phase !== "joker") return s;
+      const bagIndex = s.currentLetter == null ? s.bagIndex : s.bagIndex + 1;
+      return { ...s, bagIndex, phase: "play" };
     }
 
     case "chooseJoker": {

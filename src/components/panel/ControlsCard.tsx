@@ -1,4 +1,5 @@
-import type { GameState } from "../../game/reducer";
+import { canUseJoker, jokerIsLastTile, type GameState } from "../../game/reducer";
+import { TOTAL_BLOCKS } from "../../lib/engine/constants";
 import { useCoarsePointer } from "../../hooks/useCoarsePointer";
 import Icon from "../icons/Icon";
 import "./ControlsCard.css";
@@ -25,12 +26,14 @@ export default function ControlsCard({
   const nextTile = state.phase === "arrange" ? "–" : state.nextLetter || "–";
 
   const jokerHidden = state.jokerUsed;
-  const jokerDisabled = !(
-    state.phase === "play" &&
-    !state.jokerUsed &&
-    state.currentLetter != null &&
-    !state.isJokerTile
-  );
+  const jokerDisabled = !canUseJoker(state);
+
+  // Sista draget: påsen är tom och jokern måste läggas för att spelet ska ta slut.
+  // Väntar = dialogen är inte öppnad än (ingen bricka i dropzonen); i handen = bokstaven
+  // är vald och brickan ligger kvar att placera.
+  const lastJokerWaiting = jokerIsLastTile(state);
+  const lastJokerInHand =
+    state.phase === "play" && state.isJokerTile && state.bagIndex >= TOTAL_BLOCKS;
 
   // Ångra göms när alla användningar är förbrukade; annars aktivt så snart ett
   // oångrat drag finns att ta tillbaka (snapshoten nollas av ett undo, så samma
@@ -58,20 +61,31 @@ export default function ControlsCard({
               <span className="nextcap">Nästa</span>
               <div className="minitile">{nextTile}</div>
             </div>
-            <div className="hint">
-              {coarse ? (
-                "Håll fingret på en kolumn – brickan ovanför brädet flyttar dit. Släpp för att lägga den."
-              ) : (
-                <>
-                  Flytta med <kbd>←</kbd>
-                  <kbd>→</kbd> eller musen.
-                  <br />
-                  Släpp med <kbd>␣</kbd>/<kbd>↓</kbd> eller klick.
-                </>
-              )}
-            </div>
+            {/* Under sista draget finns ingen bricka att flytta – då ersätts
+                hjälptexten av jokernotisen nedan. */}
+            {!lastJokerWaiting && (
+              <div className="hint">
+                {coarse ? (
+                  "Håll fingret på en kolumn – brickan ovanför brädet flyttar dit. Släpp för att lägga den."
+                ) : (
+                  <>
+                    Flytta med <kbd>←</kbd>
+                    <kbd>→</kbd> eller musen.
+                    <br />
+                    Släpp med <kbd>␣</kbd>/<kbd>↓</kbd> eller klick.
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </>
+      )}
+      {(lastJokerWaiting || lastJokerInHand) && (
+        <div className="prepnote">
+          {lastJokerWaiting
+            ? `Slut på vanliga brickor – jokern är din sista bricka och måste läggas för att spelet ska ta slut. Hitta den bokstav som ger mest poäng och ${verb.toLowerCase()} på “Använd joker”.`
+            : "Sista draget: lägg jokern där den ger mest poäng – sedan är spelet slut."}
+        </div>
       )}
       {state.phase === "arrange" && (
         <div className="prepnote">
