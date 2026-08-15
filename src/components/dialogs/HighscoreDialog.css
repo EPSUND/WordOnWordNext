@@ -20,6 +20,15 @@
 /* Ljus kalenderikon på den mörka bakgrunden. */
 .hsdatenav input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7;cursor:pointer}
 
+/* Lägesraden har fyra knappar (Alla/Rekord/Dagligt/Sök) och blir för trång med
+   .langrow-knapparnas normala sidopadding på smala skärmar. Krymp paddingen i
+   stället för att låta raden radbrytas – knapparna hör ihop som en grupp. */
+.hsmoderow button{padding-left:8px;padding-right:8px;white-space:nowrap;min-width:0}
+
+/* Kort förklaring under lägesraden (rekordvyn). Selektorn måste vara minst lika
+   specifik som .dialog p i Overlay.css, annars vinner dess margin-bottom. */
+.dialog p.hshint{font-size:13px;color:var(--muted);margin-top:10px;margin-bottom:0;text-align:center}
+
 /* Sökraden: ett namnfält som växer + en sökknapp. Fältet ärver dialogens
    delade input[type=text]-stil; här styr vi bara layouten i raden. */
 .hssearchrow{display:flex;gap:8px;margin-top:10px}

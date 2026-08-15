@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScoreEntry } from "./types";
 import {
+  bestPerName,
   loadDailyScores,
   loadForMode,
+  loadRecords,
   loadScoreRank,
   loadScores,
   loadScoresByName,
@@ -90,6 +92,65 @@ describe("loadDailyScores", () => {
   it("URL-kodar parametrarna", async () => {
     await loadDailyScores("2024-01-01&injected=1", "sv");
     expect(lastUrl()).toContain("2024-01-01%26injected%3D1");
+  });
+});
+
+describe("bestPerName", () => {
+  it("behåller bara spelarens bästa resultat", () => {
+    const rows = [
+      entry({ id: 1, name: "Erik", score: 150 }),
+      entry({ id: 2, name: "Anna", score: 120 }),
+      entry({ id: 3, name: "Erik", score: 90 }),
+    ];
+    expect(bestPerName(rows).map((e) => e.id)).toEqual([1, 2]);
+  });
+
+  it("räknar namn skiftlägesokänsligt och trimmat som samma spelare", () => {
+    const rows = [
+      entry({ id: 1, name: " erik ", score: 90 }),
+      entry({ id: 2, name: "ERIK", score: 200 }),
+    ];
+    const out = bestPerName(rows);
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe(2);
+  });
+
+  it("sorterar själv, oavsett ordningen den får raderna i", () => {
+    const rows = [
+      entry({ id: 1, name: "Anna", score: 50 }),
+      entry({ id: 2, name: "Erik", score: 300 }),
+      entry({ id: 3, name: "Anna", score: 180 }),
+    ];
+    expect(bestPerName(rows).map((e) => e.id)).toEqual([2, 3]);
+  });
+});
+
+describe("loadRecords", () => {
+  it("hämtar ett bredare spann per språk, sorterat på poäng", async () => {
+    await loadRecords("sv");
+    const url = lastUrl();
+    expect(url).toContain("language=eq.sv");
+    expect(url).toContain("order=score.desc");
+    expect(url).toContain("limit=1000");
+  });
+
+  it("returnerar en rad per spelare", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonOk([
+        entry({ id: 1, name: "Erik", score: 150 }),
+        entry({ id: 2, name: "Erik", score: 140 }),
+        entry({ id: 3, name: "Anna", score: 130 }),
+      ]),
+    );
+    await expect(loadRecords("sv")).resolves.toEqual([
+      entry({ id: 1, name: "Erik", score: 150 }),
+      entry({ id: 3, name: "Anna", score: 130 }),
+    ]);
+  });
+
+  it("kastar vid API-fel (ingen tyst fallback)", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("nope", { status: 500 }));
+    await expect(loadRecords("sv")).rejects.toThrow(/500/);
   });
 });
 

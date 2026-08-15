@@ -33,6 +33,35 @@ export function loadScores(lang: Lang): Promise<ScoreEntry[]> {
   );
 }
 
+/* Rekordlistan hämtar ett bredare spann än de 200 som visas, eftersom raderna
+   tunnas ut till en per spelare. Spelare vars alla resultat ligger utanför
+   spannet kommer inte med – de hade ändå inte nått in på listan. */
+const RECORDS_SCAN_LIMIT = 1000;
+
+/** Behåller bästa resultatet per namn. Namn jämförs trimmat och skiftlägesokänsligt,
+    precis som sökningen (ilike), så "Erik" och "erik" är samma spelare. */
+export function bestPerName(rows: ScoreEntry[]): ScoreEntry[] {
+  const seen = new Set<string>();
+  const out: ScoreEntry[] = [];
+  // Sortera själva – ordningen från servern får inte vara det som avgör "bäst".
+  for (const e of rows.slice().sort((a, b) => b.score - a.score)) {
+    const key = (e.name || "").trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(e);
+  }
+  return out;
+}
+
+/** Rekordlistan: ett resultat per spelare (deras bästa) i ett språk.
+    PostgREST saknar DISTINCT ON, så uttunningen sker i klienten. */
+export async function loadRecords(lang: Lang): Promise<ScoreEntry[]> {
+  const rows = await fetchScores(
+    `language=eq.${encodeURIComponent(lang)}&order=score.desc&limit=${RECORDS_SCAN_LIMIT}`,
+  );
+  return bestPerName(rows);
+}
+
 /** Alla resultat för ett givet namn (skiftlägesokänsligt) i ett språk. */
 export function loadScoresByName(name: string, lang: Lang): Promise<ScoreEntry[]> {
   // ilike utan wildcards = exakt men skiftlägesokänslig träff. Escapa de tecken

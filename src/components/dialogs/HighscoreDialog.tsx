@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameMode, Lang, ScoreEntry } from "../../lib/types";
-import { loadDailyScores, loadScoreRank, loadScores, loadScoresByName } from "../../lib/scores";
+import {
+  loadDailyScores,
+  loadRecords,
+  loadScoreRank,
+  loadScores,
+  loadScoresByName,
+} from "../../lib/scores";
 import { todayStr } from "../../lib/engine/rng";
 import Icon from "../icons/Icon";
 import HighscoreTable from "./HighscoreTable";
@@ -22,7 +28,7 @@ interface Props {
   onClose: () => void;
 }
 
-type ViewMode = "all" | "daily" | "search";
+type ViewMode = "all" | "records" | "daily" | "search";
 
 export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onClose }: Props) {
   const [viewLang, setViewLang] = useState<Lang>(initialLang);
@@ -58,6 +64,9 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
     }> => {
       if (viewMode === "daily") {
         return { list: viewDate ? await loadDailyScores(viewDate, viewLang) : [], ranks: null };
+      }
+      if (viewMode === "records") {
+        return { list: await loadRecords(viewLang), ranks: null };
       }
       if (viewMode === "search") {
         const list = await loadScoresByName(searchTerm, viewLang);
@@ -102,9 +111,15 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
           Engelska
         </button>
       </div>
-      <div className="langrow" style={{ marginTop: 8 }}>
+      <div className="langrow hsmoderow" style={{ marginTop: 8 }}>
         <button className={viewMode === "all" ? "sel" : ""} onClick={() => setViewMode("all")}>
           Alla
+        </button>
+        <button
+          className={viewMode === "records" ? "sel" : ""}
+          onClick={() => setViewMode("records")}
+        >
+          Rekord
         </button>
         <button className={viewMode === "daily" ? "sel" : ""} onClick={() => setViewMode("daily")}>
           Dagligt
@@ -113,6 +128,7 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
           Sök
         </button>
       </div>
+      {viewMode === "records" && <p className="hshint">Bästa resultat per spelare.</p>}
       {viewMode === "search" && (
         <form
           className="hssearchrow"
