@@ -84,7 +84,12 @@
 .pickhi{position:absolute;pointer-events:none;border-radius:8px;z-index:7;
   box-shadow:inset 0 0 0 3px var(--lingon);background:#b8453c22}
 .tile.handtile{pointer-events:auto;cursor:pointer;z-index:6}
-.tile.handtile.sel{outline:3px solid var(--ring);outline-offset:2px;box-shadow:0 3px 0 #b39d76,0 0 12px var(--ring)}
+/* Markeringen ska vara en ram som ligger tight mot brickans kant (inget
+   glipp där dropzonens bakgrund syns) och aldrig skymmas. Handbrickorna
+   ligger kant i kant, så utan z-index målar nästa bricka över ramens
+   högerkant – därför lyfts den markerade brickan ovanför grannarna. */
+.tile.handtile.sel{outline:3px solid var(--ring);outline-offset:0;z-index:8;
+  box-shadow:0 3px 0 #b39d76,0 0 12px var(--ring)}
 
 @media (hover:hover){
   .colhit:hover{background:#ffffff08}
