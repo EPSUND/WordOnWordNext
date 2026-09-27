@@ -16,19 +16,22 @@ import HighscoreDialog from "./components/dialogs/HighscoreDialog";
 import HelpDialog from "./components/dialogs/HelpDialog";
 
 export default function App() {
-  const { state, start, starting, startError, actions } = useGame();
-  const tile = useTileSize();
-  const [startMode, setStartMode] = useState<GameMode>("random");
-  // Välkomstsidan är bakgrund vid första besöket. Den blir false först när ett
-  // spel faktiskt startas – då kommer man aldrig tillbaka hit under sessionen.
-  // Så länge den är true är det den man återgår till om StartDialog avbryts.
-  const [welcome, setWelcome] = useState(true);
   // StartDialog styrs av en egen flagga, INTE av spel-phase: "Nytt spel" ska
   // kunna öppnas ovanpå ett pågående spel utan att rensa dess state. Först
   // "Starta spelet" (onStart nedan) nollställer och bygger ett nytt spel.
   const [startOpen, setStartOpen] = useState(false);
   const [hsOpen, setHsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  // Spelets tangenter pausas medan en av de här dialogerna ligger över brädet –
+  // annars släppte t.ex. mellanslag en bricka bakom Hjälp. Jokerdialogen styrs
+  // av phase och hanteras i game/keys.ts; slutdialogen likaså (phase over).
+  const { state, start, starting, startError, actions } = useGame(startOpen || hsOpen || helpOpen);
+  const tile = useTileSize();
+  const [startMode, setStartMode] = useState<GameMode>("random");
+  // Välkomstsidan är bakgrund vid första besöket. Den blir false först när ett
+  // spel faktiskt startas – då kommer man aldrig tillbaka hit under sessionen.
+  // Så länge den är true är det den man återgår till om StartDialog avbryts.
+  const [welcome, setWelcome] = useState(true);
   const [endClosed, setEndClosed] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
 

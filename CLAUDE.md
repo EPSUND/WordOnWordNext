@@ -50,6 +50,7 @@ src/lib/engine/     Ren spellogik, ingen DOM:
   grid.ts             landingRow, collapseColumn, ensureColPlayable, cellXY, PAD
 src/lib/            dict.ts (fetch + cache), scores.ts (Supabase), sound.ts (WebAudio), types.ts
 src/game/reducer.ts Hela speltillståndet som en REN reducer (state + actions)
+src/game/keys.ts    keyToAction: tangent → action per fas (ren; useGame gör DOM-kollarna – se §5)
 src/hooks/          useGame.ts (reducer-glue, ljud/tangentbord/async start)
                     useTileSize.ts (mäter --tile-size i DOM:en – se §7)
                     useCoarsePointer.ts (touch vs mus – styr inmatningsidiom)
@@ -85,6 +86,12 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
 - Komponenterna renderar **deklarativt från state**. Sidoeffekter (ljud, tangentbord, async
   ordlisteladdning, Supabase-anrop) ligger i `useGame` och i dialog-komponenterna.
 - Faser: `idle → arrange → play → fall → joker → over`. Overlays visas utifrån `phase`.
+- **Tangentbordet**: `useGame` lyssnar på `keydown` på `window` och översätter med `keyToAction`
+  (`src/game/keys.ts`). Spelets tangenter **pausas medan Start, Hjälp eller Topplista är öppen**
+  (`App` skickar in flaggan) och när fokus ligger i ett textfält – annars styr de spelet bakom
+  dialogen (mellanslag släppte en bricka bakom Hjälp, `j`/`z` i sökfältet blev joker/ångra).
+  Ctrl/Cmd/Alt-kombinationer lämnas åt webbläsaren; släpp/joker/ångra autorepeteras inte, och under
+  `fall` sväljs spelets tangenter så att mellanslaget inte scrollar sidan.
 - **`.layout` är ett grid med `grid-template-areas`.** DOM-ordningen är mobilens läsordning
   (status → bräde → kontroller → ordlista); på skrivbord flyttar griden korten till en
   högerkolumn. Samma markup i båda lägena – lägg inte till en parallell mobil-DOM.
@@ -220,6 +227,7 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
   - `grid.test.ts` – gravitation, kolumnkollaps, pixelmappning.
   - `reducer.test.ts` – hela fasflödet `arrange → play → fall → joker → over`, inklusive
     guard-fallen (ingen ändring i fel fas) och att jokern bara går att använda en gång.
+  - `keys.test.ts` – tangentmappningen per fas, autorepeat och modifierare.
   - `dict.test.ts` – parsning, cache, och **regressionsspärren mot CRLF** (§7).
   - `scores.test.ts` – Supabase-URL:er, kolumnalias, POST-body och att fel kastas (ingen tyst
     fallback). Inga riktiga nätverksanrop; `fetch` stubbas.

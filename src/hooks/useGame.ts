@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { initialState, reducer } from "../game/reducer";
+import { keyToAction } from "../game/keys";
 import type { GameMode, Lang } from "../lib/types";
 import { loadDict } from "../lib/dict";
 import { makeBag } from "../lib/engine/bag";
 import { hashSeed, mulberry32, todayStr } from "../lib/engine/rng";
 import { pling, thud, unlockAudio } from "../lib/sound";
 
-export function useGame() {
+/** Skriver man i ett fält hör tangenterna till fältet, inte spelet. */
+const isEditable = (t: EventTarget | null): boolean =>
+  t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+
+/**
+ * @param inputBlocked Sant när en dialog (Start, Hjälp, Topplista) ligger över brädet.
+ *   Då pausas spelets tangenter helt, annars styr de spelet bakom dialogen.
+ */
+export function useGame(inputBlocked: boolean) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -33,47 +42,19 @@ export function useGame() {
     };
   }, []);
 
-  // Tangentbordsstyrning beroende på fas.
+  // Tangentbordsstyrning beroende på fas (mappningen är ren – se game/keys.ts).
   useEffect(() => {
+    if (inputBlocked) return;
     const onKey = (e: KeyboardEvent) => {
-      if (state.phase === "arrange") {
-        if (e.key === "Enter") {
-          dispatch({ type: "finishArrange" });
-          e.preventDefault();
-        }
-        return;
-      }
-      if (state.phase === "joker") {
-        // Escape ångrar en frivilligt öppnad joker (reducern nekar den tvingade slutjokern).
-        if (e.key === "Escape") {
-          dispatch({ type: "cancelJoker" });
-          e.preventDefault();
-        }
-        return;
-      }
-      if (state.phase !== "play") return;
-      if (e.key === "ArrowLeft") {
-        dispatch({ type: "setCol", c: state.currentCol - 1 });
-        e.preventDefault();
-      } else if (e.key === "ArrowRight") {
-        dispatch({ type: "setCol", c: state.currentCol + 1 });
-        e.preventDefault();
-      } else if (e.key === "ArrowDown" || e.key === " ") {
-        dispatch({ type: "drop" });
-        e.preventDefault();
-      } else if (e.key === "j" || e.key === "J") {
-        dispatch({ type: "useJoker" });
-        e.preventDefault();
-      } else if (e.key === "z" || e.key === "Z") {
-        dispatch({ type: "undo" });
-        e.preventDefault();
-      } else if (/^[1-7]$/.test(e.key)) {
-        dispatch({ type: "setCol", c: +e.key - 1 });
-      }
+      if (isEditable(e.target)) return;
+      const r = keyToAction(state.phase, state.currentCol, e);
+      if (!r) return;
+      if (r.preventDefault) e.preventDefault();
+      if (r.action) dispatch(r.action);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [state.phase, state.currentCol]);
+  }, [state.phase, state.currentCol, inputBlocked]);
 
   const start = useCallback(
     async (mode: GameMode) => {
