@@ -25,7 +25,7 @@ const bag = (...first: string[]) => {
 };
 
 const started = (b = bag("K", "A", "T", "T", "X")) =>
-  reducer(initialState, { type: "start", mode: "random", bag: b, dailyDate: null });
+  reducer(initialState, { type: "start", mode: "random", lang: "sv", bag: b, dailyDate: null });
 
 /** Placerar alla fem starthandsbrickor i varsin kolumn och går till play-fasen. */
 function toPlay(s: GameState, cols = [0, 1, 2, 3, 4]) {
@@ -48,9 +48,15 @@ describe("start", () => {
     expect(s.selHand).toBe(0);
   });
 
-  it("behåller valt språk men nollställer poäng och rutnät", () => {
-    const dirty = { ...initialState, lang: "en" as const, score: 99, numWords: 4 };
-    const s = reducer(dirty, { type: "start", mode: "daily", bag: bag("A"), dailyDate: "2024-01-01" });
+  it("tar språket från actionen och nollställer poäng och rutnät", () => {
+    const dirty = { ...initialState, lang: "sv" as const, score: 99, numWords: 4 };
+    const s = reducer(dirty, {
+      type: "start",
+      mode: "daily",
+      lang: "en",
+      bag: bag("A"),
+      dailyDate: "2024-01-01",
+    });
     expect(s.lang).toBe("en");
     expect(s.mode).toBe("daily");
     expect(s.dailyDate).toBe("2024-01-01");
@@ -58,20 +64,15 @@ describe("start", () => {
     expect(s.numWords).toBe(0);
     expect(s.grid.flat().every((x) => x === null)).toBe(true);
   });
-});
 
-describe("setLang", () => {
-  it("går att byta språk i idle och over", () => {
-    expect(reducer(initialState, { type: "setLang", lang: "en" }).lang).toBe("en");
-    const over = { ...initialState, phase: "over" as const };
-    expect(reducer(over, { type: "setLang", lang: "en" }).lang).toBe("en");
-  });
-
-  it("är låst mitt i ett spel", () => {
-    for (const phase of ["arrange", "play", "fall", "joker"] as const) {
-      const s = { ...initialState, phase };
-      expect(reducer(s, { type: "setLang", lang: "en" })).toBe(s);
-    }
+  it("kan starta ett spel på ett annat språk mitt i ett pågående", () => {
+    // Språket väljs per spel i startdialogen; förut gick det inte att byta mitt i
+    // ett spel, och ett byte efter spelets slut skrev om det avslutade spelet.
+    const play = toPlay(started());
+    expect(play.lang).toBe("sv");
+    const s = reducer(play, { type: "start", mode: "random", lang: "en", bag: bag("C"), dailyDate: null });
+    expect(s.lang).toBe("en");
+    expect(s.phase).toBe("arrange");
   });
 });
 

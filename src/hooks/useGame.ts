@@ -56,31 +56,29 @@ export function useGame(inputBlocked: boolean) {
     return () => window.removeEventListener("keydown", onKey);
   }, [state.phase, state.currentCol, inputBlocked]);
 
-  const start = useCallback(
-    async (mode: GameMode) => {
-      setStartError(null);
-      setStarting(true);
-      try {
-        await loadDict(state.lang);
-      } catch (e) {
-        setStarting(false);
-        setStartError(e instanceof Error ? e.message : "Kunde inte ladda ordlistan.");
-        return false;
-      }
-      const daily = mode === "daily";
-      const dailyDate = daily ? todayStr() : null;
-      const rng = daily ? mulberry32(hashSeed("wow-daily-" + dailyDate)) : Math.random;
-      const bag = makeBag(state.lang, rng);
-      dispatch({ type: "start", mode, bag, dailyDate });
+  // Språket skickas in i stället för att läsas ur state: det aktuella spelets
+  // språk och det som väljs för nästa spel är två olika saker (se reducerns start).
+  const start = useCallback(async (mode: GameMode, lang: Lang) => {
+    setStartError(null);
+    setStarting(true);
+    try {
+      await loadDict(lang);
+    } catch (e) {
       setStarting(false);
-      return true;
-    },
-    [state.lang],
-  );
+      setStartError(e instanceof Error ? e.message : "Kunde inte ladda ordlistan.");
+      return false;
+    }
+    const daily = mode === "daily";
+    const dailyDate = daily ? todayStr() : null;
+    const rng = daily ? mulberry32(hashSeed("wow-daily-" + dailyDate)) : Math.random;
+    const bag = makeBag(lang, rng);
+    dispatch({ type: "start", mode, lang, bag, dailyDate });
+    setStarting(false);
+    return true;
+  }, []);
 
   const actions = useMemo(
     () => ({
-      setLang: (lang: Lang) => dispatch({ type: "setLang", lang }),
       setCol: (c: number) => dispatch({ type: "setCol", c }),
       drop: () => dispatch({ type: "drop" }),
       landed: () => dispatch({ type: "landed" }),

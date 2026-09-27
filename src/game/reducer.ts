@@ -67,8 +67,7 @@ export interface GameState {
 }
 
 export type Action =
-  | { type: "setLang"; lang: Lang }
-  | { type: "start"; mode: GameMode; bag: string[]; dailyDate: string | null }
+  | { type: "start"; mode: GameMode; lang: Lang; bag: string[]; dailyDate: string | null }
   | { type: "selectHand"; i: number }
   | { type: "arrangeClick"; r: number; c: number }
   | { type: "finishArrange" }
@@ -267,9 +266,6 @@ function afterLand(prev: GameState, r: number, c: number, joker: boolean): GameS
 
 export function reducer(s: GameState, a: Action): GameState {
   switch (a.type) {
-    case "setLang":
-      return s.phase === "idle" || s.phase === "over" ? { ...s, lang: a.lang } : s;
-
     case "start": {
       const grid = emptyGrid();
       const startHand: HandTile[] = a.bag
@@ -277,7 +273,10 @@ export function reducer(s: GameState, a: Action): GameState {
         .map((letter) => ({ letter, r: null, c: null }));
       return {
         ...initialState,
-        lang: s.lang,
+        // Språket hör till spelet och sätts bara här. Startdialogens val gäller
+        // nästa spel och ligger i App – det får aldrig ändra ett pågående eller
+        // avslutat spel (brickvärden, topplista och "Spela igen" läser lang).
+        lang: a.lang,
         mode: a.mode,
         dailyDate: a.dailyDate,
         phase: "arrange",

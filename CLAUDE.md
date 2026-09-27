@@ -85,6 +85,10 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
   (påsen) genereras i `useGame.start` och skickas in via `start`-action så reducern förblir ren.
 - Komponenterna renderar **deklarativt från state**. Sidoeffekter (ljud, tangentbord, async
   ordlisteladdning, Supabase-anrop) ligger i `useGame` och i dialog-komponenterna.
+- **Språket hör till spelet.** `state.lang` sätts bara av `start`-actionen. Startdialogens val
+  (`startLang`/`startMode` i `App`) gäller *nästa* spel. Ett byte + Avbryt får aldrig ändra ett
+  pågående eller avslutat spel, eftersom brickvärden, topplistan, Spara och "Spela igen" läser
+  `state.lang`.
 - Faser: `idle → arrange → play → fall → joker → over`. Overlays visas utifrån `phase`.
 - **Tangentbordet**: `useGame` lyssnar på `keydown` på `window` och översätter med `keyToAction`
   (`src/game/keys.ts`). Spelets tangenter **pausas medan Start, Hjälp eller Topplista är öppen**

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGame } from "./hooks/useGame";
 import { useTileSize } from "./hooks/useTileSize";
-import type { GameMode } from "./lib/types";
+import type { GameMode, Lang } from "./lib/types";
 import Header from "./components/Header";
 import Welcome from "./components/Welcome";
 import Board from "./components/board/Board";
@@ -27,7 +27,14 @@ export default function App() {
   // av phase och hanteras i game/keys.ts; slutdialogen likaså (phase over).
   const { state, start, starting, startError, actions } = useGame(startOpen || hsOpen || helpOpen);
   const tile = useTileSize();
+  // Startdialogens val gäller NÄSTA spel. De är skilda från state.lang/state.mode,
+  // som hör till det pågående (eller avslutade) spelet och bara sätts av start –
+  // annars kunde ett språkbyte + Avbryt skriva om ett avslutat spel.
   const [startMode, setStartMode] = useState<GameMode>("random");
+  const [startLang, setStartLang] = useState<Lang>("sv");
+  // Innan något spel startats finns bara startdialogens val att visa i Hjälp och
+  // Topplista; därefter spelets språk.
+  const shownLang = state.phase === "idle" ? startLang : state.lang;
   // Välkomstsidan är bakgrund vid första besöket. Den blir false först när ett
   // spel faktiskt startas – då kommer man aldrig tillbaka hit under sessionen.
   // Så länge den är true är det den man återgår till om StartDialog avbryts.
@@ -95,18 +102,18 @@ export default function App() {
 
       {startOpen && (
         <StartDialog
-          lang={state.lang}
+          lang={startLang}
           mode={startMode}
           starting={starting}
           startError={startError}
-          onSetLang={actions.setLang}
+          onSetLang={setStartLang}
           onSetMode={setStartMode}
           onStart={async () => {
             // Nollställ och bygg spelet först här. Vid lyckad start lämnar vi
             // både dialogen och välkomstsidan; vid fel stannar dialogen kvar
             // (startError visas). Avbryt (onCancel) återgår i stället orört:
             // till välkomstsidan om den ligger kvar, annars till pågående spel.
-            const ok = await start(startMode);
+            const ok = await start(startMode, startLang);
             if (ok) {
               setStartOpen(false);
               setWelcome(false);
@@ -136,7 +143,7 @@ export default function App() {
           lang={state.lang}
           mode={state.mode}
           dailyDate={state.dailyDate}
-          onAgain={() => start(state.mode)}
+          onAgain={() => start(state.mode, state.lang)}
           onClose={() => setEndClosed(true)}
           saved={scoreSaved}
           onSaved={() => setScoreSaved(true)}
@@ -145,14 +152,17 @@ export default function App() {
 
       {hsOpen && (
         <HighscoreDialog
-          initialLang={state.lang}
+          initialLang={shownLang}
           gameMode={state.mode}
           dailyDate={state.dailyDate}
           onClose={() => setHsOpen(false)}
         />
       )}
 
-      {helpOpen && <HelpDialog lang={state.lang} onClose={() => setHelpOpen(false)} />}
+      {/* Öppnad från startdialogen visar hjälpen värdena för språket man väljer. */}
+      {helpOpen && (
+        <HelpDialog lang={startOpen ? startLang : shownLang} onClose={() => setHelpOpen(false)} />
+      )}
     </>
   );
 }
