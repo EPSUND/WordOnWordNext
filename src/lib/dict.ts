@@ -10,7 +10,14 @@ export async function loadDict(lang: Lang): Promise<Set<string>> {
   if (cached) return cached;
   if (!loading[lang]) {
     loading[lang] = (async () => {
-      const res = await fetch(`${import.meta.env.BASE_URL}dict-${lang}.txt`);
+      let res: Response;
+      try {
+        res = await fetch(`${import.meta.env.BASE_URL}dict-${lang}.txt`);
+      } catch {
+        // fetch kastar med webbläsarens egen engelska text ("Failed to fetch"),
+        // som annars hamnade rakt i startdialogen.
+        throw new Error("Kunde inte ladda ordlistan (nätverksfel).");
+      }
       if (!res.ok) throw new Error(`Kunde inte ladda ordlistan (${res.status}).`);
       const raw = await res.text();
       // Dela på både LF och CRLF. Med core.autocrlf=true checkas filerna ut med
@@ -24,7 +31,14 @@ export async function loadDict(lang: Lang): Promise<Set<string>> {
       );
       DICTS[lang] = set;
       return set;
-    })();
+    })().catch((e: unknown) => {
+      // Ett misslyckat försök får inte ligga kvar i cachen: då visade "Starta
+      // spelet" samma fel för evigt utan att hämta igen, och bara en omladdning
+      // av sidan hjälpte. Nästa anrop gör ett nytt försök. (.catch och inte
+      // try/catch i funktionen: den här körs garanterat efter tilldelningen.)
+      delete loading[lang];
+      throw e;
+    });
   }
   return loading[lang]!;
 }

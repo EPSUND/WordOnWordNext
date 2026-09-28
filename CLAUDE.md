@@ -232,7 +232,8 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
   - `reducer.test.ts` – hela fasflödet `arrange → play → fall → joker → over`, inklusive
     guard-fallen (ingen ändring i fel fas) och att jokern bara går att använda en gång.
   - `keys.test.ts` – tangentmappningen per fas, autorepeat och modifierare.
-  - `dict.test.ts` – parsning, cache, och **regressionsspärren mot CRLF** (§7).
+  - `dict.test.ts` – parsning, cache, **regressionsspärren mot CRLF** (§7) och att ett misslyckat
+    försök inte cachas (nästa "Starta spelet" hämtar igen i stället för att visa samma fel för evigt).
   - `scores.test.ts` – Supabase-URL:er, kolumnalias, POST-body och att fel kastas (ingen tyst
     fallback). Inga riktiga nätverksanrop; `fetch` stubbas.
 - **Riktiga ordlistor i testerna.** `src/test/dictFixture.ts` läser `public/dict-*.txt` från disk

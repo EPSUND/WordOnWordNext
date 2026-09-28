@@ -80,6 +80,57 @@ describe("loadDict", () => {
     const { loadDict } = await freshDict();
     await expect(loadDict("sv")).rejects.toThrow(/404/);
   });
+
+  it("ger ett svenskt meddelande vid nätverksfel i stället för webbläsarens", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+    const { loadDict } = await freshDict();
+    await expect(loadDict("sv")).rejects.toThrow("Kunde inte ladda ordlistan (nätverksfel).");
+  });
+
+  it("gör ett nytt försök efter ett nätverksfel – felet cachas inte", async () => {
+    // Regressionsspärr: det avvisade löftet låg kvar i cachen, så "Starta spelet"
+    // visade samma fel för evigt utan nytt anrop. Bara en omladdning hjälpte.
+    const spy = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(okResponse("KATT\n"));
+    vi.stubGlobal("fetch", spy);
+    const { loadDict } = await freshDict();
+    await expect(loadDict("sv")).rejects.toThrow(/nätverksfel/);
+    expect((await loadDict("sv")).has("KATT")).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("gör ett nytt försök efter ett HTTP-fel", async () => {
+    const spy = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(okResponse("KATT\n"));
+    vi.stubGlobal("fetch", spy);
+    const { loadDict } = await freshDict();
+    await expect(loadDict("sv")).rejects.toThrow(/503/);
+    expect((await loadDict("sv")).has("KATT")).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("delar ett misslyckat försök mellan samtidiga anrop, men nästa anrop försöker igen", async () => {
+    const spy = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(okResponse("KATT\n"));
+    vi.stubGlobal("fetch", spy);
+    const { loadDict } = await freshDict();
+    const results = await Promise.allSettled([loadDict("sv"), loadDict("sv")]);
+    expect(results.map((r) => r.status)).toEqual(["rejected", "rejected"]);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect((await loadDict("sv")).has("KATT")).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("dictFor och isDictLoaded", () => {
