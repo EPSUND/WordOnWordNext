@@ -1,3 +1,4 @@
+import { useI18n } from "../../i18n/I18n";
 import type { Lang } from "../../lib/types";
 import { ALPHABET } from "../../lib/engine/constants";
 import Overlay from "./Overlay";
@@ -12,14 +13,11 @@ interface Props {
 }
 
 export default function JokerDialog({ last, lang, onChoose, onCancel }: Props) {
+  const { t } = useI18n();
   return (
     <Overlay className="jokerdialog">
-      <h2>{last ? "Sista brickan – joker!" : "Joker – välj bokstav"}</h2>
-      <p>
-        {last
-          ? "Alla vanliga brickor är placerade. Välj vilken bokstav din joker ska vara – eller avbryt och titta på brädet en gång till."
-          : "Välj vilken bokstav jokern ska vara. Den blir din nästa bricka."}
-      </p>
+      <h2>{last ? t.joker.titleLast : t.joker.title}</h2>
+      <p>{last ? t.joker.textLast : t.joker.text}</p>
       <div className="jokergrid">
         {[...ALPHABET[lang]].map((ch) => (
           <button key={ch} onClick={() => onChoose(ch)}>
@@ -29,7 +27,7 @@ export default function JokerDialog({ last, lang, onChoose, onCancel }: Props) {
       </div>
       <div className="btnrow" style={{ marginTop: 12 }}>
         <button style={{ flex: 1 }} onClick={onCancel}>
-          Avbryt
+          {t.cancel}
         </button>
       </div>
     </Overlay>

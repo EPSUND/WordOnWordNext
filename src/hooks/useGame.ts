@@ -12,13 +12,14 @@ const isEditable = (t: EventTarget | null): boolean =>
   t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
 
 /**
- * @param inputBlocked Sant när en dialog (Start, Hjälp, Topplista) ligger över brädet.
+ * @param inputBlocked Sant när en dialog (Start, Hjälp, Topplista, Språk) ligger över brädet.
  *   Då pausas spelets tangenter helt, annars styr de spelet bakom dialogen.
  */
 export function useGame(inputBlocked: boolean) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [starting, setStarting] = useState(false);
-  const [startError, setStartError] = useState<string | null>(null);
+  // Felet sparas som det är; StartDialog gör text av det på rätt språk (errorText).
+  const [startError, setStartError] = useState<unknown>(null);
 
   // Ljudeffekter drivna av räknare i speltillståndet.
   useEffect(() => {
@@ -65,7 +66,7 @@ export function useGame(inputBlocked: boolean) {
       await loadDict(lang);
     } catch (e) {
       setStarting(false);
-      setStartError(e instanceof Error ? e.message : "Kunde inte ladda ordlistan.");
+      setStartError(e);
       return false;
     }
     const daily = mode === "daily";

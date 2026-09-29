@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { errorText, useI18n } from "../../i18n/I18n";
 import type { GameMode, Lang, ScoreEntry } from "../../lib/types";
 import {
   loadBestPlayerScores,
@@ -31,6 +32,7 @@ interface Props {
 type ViewMode = "all" | "best" | "daily" | "search";
 
 export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onClose }: Props) {
+  const { t } = useI18n();
   const [viewLang, setViewLang] = useState<Lang>(initialLang);
   const [viewMode, setViewMode] = useState<ViewMode>(gameMode === "daily" ? "daily" : "all");
   const [viewDate, setViewDate] = useState<string>(dailyDate || todayStr());
@@ -41,7 +43,8 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
   // Global placering per poäng – bara i sökläget (annars är radens position placeringen).
   const [rankByScore, setRankByScore] = useState<Map<number, number> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Felet sparas som det är och blir text vid renderingen (errorText).
+  const [error, setError] = useState<unknown>(null);
   const reqRef = useRef(0);
 
   useEffect(() => {
@@ -92,7 +95,7 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
       })
       .catch((e) => {
         if (my === reqRef.current) {
-          setError(e instanceof Error ? e.message : "Fel");
+          setError(e);
           setEntries(null);
           setRankByScore(null);
           setLoading(false);
@@ -102,30 +105,30 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
 
   return (
     <Overlay>
-      <h2>Topplista</h2>
+      <h2>{t.highscores}</h2>
       <div className="langrow">
         <button className={viewLang === "sv" ? "sel" : ""} onClick={() => setViewLang("sv")}>
-          Svenska
+          {t.gameLangs.sv}
         </button>
         <button className={viewLang === "en" ? "sel" : ""} onClick={() => setViewLang("en")}>
-          Engelska
+          {t.gameLangs.en}
         </button>
       </div>
       <div className="langrow hsmoderow" style={{ marginTop: 8 }}>
         <button className={viewMode === "all" ? "sel" : ""} onClick={() => setViewMode("all")}>
-          Alla
+          {t.hs.all}
         </button>
         <button className={viewMode === "best" ? "sel" : ""} onClick={() => setViewMode("best")}>
-          Rekord
+          {t.hs.best}
         </button>
         <button className={viewMode === "daily" ? "sel" : ""} onClick={() => setViewMode("daily")}>
-          Dagligt
+          {t.hs.daily}
         </button>
         <button className={viewMode === "search" ? "sel" : ""} onClick={() => setViewMode("search")}>
-          Sök
+          {t.hs.search}
         </button>
       </div>
-      {viewMode === "best" && <p className="hshint">Bästa resultat per spelare.</p>}
+      {viewMode === "best" && <p className="hshint">{t.hs.bestHint}</p>}
       {viewMode === "search" && (
         <form
           className="hssearchrow"
@@ -137,23 +140,23 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
           <input
             type="text"
             value={searchInput}
-            placeholder="Sök på namn…"
-            aria-label="Sök på namn"
+            placeholder={t.hs.searchPlaceholder}
+            aria-label={t.hs.searchLabel}
             autoFocus
             onChange={(e) => setSearchInput(e.target.value)}
           />
           <button type="submit" className="primary" disabled={!searchInput.trim()}>
-            Sök
+            {t.hs.search}
           </button>
         </form>
       )}
       {viewMode === "daily" && (
         <div className="hsdaterow">
-          <span className="hslabel">Välj dag</span>
+          <span className="hslabel">{t.hs.chooseDay}</span>
           <div className="hsdatenav">
             <button
               onClick={() => setViewDate(shiftDate(viewDate, -1))}
-              aria-label="Föregående dag"
+              aria-label={t.hs.prevDay}
             >
               <Icon name="prev" className="hsicon" />
             </button>
@@ -166,7 +169,7 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
             <button
               onClick={() => setViewDate(shiftDate(viewDate, 1))}
               disabled={viewDate >= todayStr()}
-              aria-label="Nästa dag"
+              aria-label={t.hs.nextDay}
             >
               <Icon name="next" className="hsicon" />
             </button>
@@ -177,13 +180,13 @@ export default function HighscoreDialog({ initialLang, gameMode, dailyDate, onCl
       <HighscoreTable
         entries={entries}
         loading={loading}
-        error={error}
+        error={error != null ? errorText(t, error) : null}
         rankByScore={rankByScore}
       />
 
       <div className="btnrow" style={{ marginTop: 16 }}>
         <button className="primary" style={{ flex: 1 }} onClick={onClose}>
-          Stäng
+          {t.close}
         </button>
       </div>
     </Overlay>

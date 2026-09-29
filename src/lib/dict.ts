@@ -1,4 +1,5 @@
 import type { Lang } from "./types";
+import { FetchFailed } from "./errors";
 
 /* Ordlistorna ligger som ren text i public/ (ett ord per rad) och hämtas via fetch.
    BASE_URL gör att sökvägen fungerar både i dev ("/") och på Pages ("/WordOnWordNext/"). */
@@ -14,11 +15,11 @@ export async function loadDict(lang: Lang): Promise<Set<string>> {
       try {
         res = await fetch(`${import.meta.env.BASE_URL}dict-${lang}.txt`);
       } catch {
-        // fetch kastar med webbläsarens egen engelska text ("Failed to fetch"),
-        // som annars hamnade rakt i startdialogen.
-        throw new Error("Kunde inte ladda ordlistan (nätverksfel).");
+        // fetch kastar med webbläsarens egen text ("Failed to fetch"), som annars
+        // hamnade rakt i startdialogen. UI:t översätter FetchFailed (errorText).
+        throw new FetchFailed("dict", null);
       }
-      if (!res.ok) throw new Error(`Kunde inte ladda ordlistan (${res.status}).`);
+      if (!res.ok) throw new FetchFailed("dict", res.status);
       const raw = await res.text();
       // Dela på både LF och CRLF. Med core.autocrlf=true checkas filerna ut med
       // CRLF på Windows; en split på enbart "\n" gav då ord med släpande \r,

@@ -78,10 +78,13 @@ describe("loadDict", () => {
   it("kastar med statuskod när hämtningen misslyckas", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
     const { loadDict } = await freshDict();
-    await expect(loadDict("sv")).rejects.toThrow(/404/);
+    await expect(loadDict("sv")).rejects.toMatchObject({ what: "dict", status: 404 });
   });
 
-  it("ger ett svenskt meddelande vid nätverksfel i stället för webbläsarens", async () => {
+  // Webbläsarens egen text ("Failed to fetch") hamnade förr rakt i startdialogen.
+  // Nu kastas ett FetchFailed som UI:t gör text av på gränssnittets språk.
+  // (Inte instanceof: resetModules ger dict.ts en egen kopia av errors.ts.)
+  it("ger ett eget fel vid nätverksfel i stället för webbläsarens", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {
@@ -89,7 +92,11 @@ describe("loadDict", () => {
       }),
     );
     const { loadDict } = await freshDict();
-    await expect(loadDict("sv")).rejects.toThrow("Kunde inte ladda ordlistan (nätverksfel).");
+    await expect(loadDict("sv")).rejects.toMatchObject({
+      name: "FetchFailed",
+      what: "dict",
+      status: null,
+    });
   });
 
   it("gör ett nytt försök efter ett nätverksfel – felet cachas inte", async () => {

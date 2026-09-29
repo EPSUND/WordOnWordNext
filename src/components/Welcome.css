@@ -92,6 +92,15 @@
   margin-top: 2px;
 }
 
+/* Språkknappen: bara globen (som i headern), i övre hörnet där man letar efter
+   språkval. Utanför .welcome-inner så att den inte flyttar det centrerade
+   innehållet. */
+.welcome-lang {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wcross .tile {
     animation: none;

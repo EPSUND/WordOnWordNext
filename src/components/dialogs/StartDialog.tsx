@@ -1,3 +1,4 @@
+import { errorText, useI18n } from "../../i18n/I18n";
 import type { GameMode, Lang } from "../../lib/types";
 import Overlay from "./Overlay";
 
@@ -5,7 +6,8 @@ interface Props {
   lang: Lang;
   mode: GameMode;
   starting: boolean;
-  startError: string | null;
+  /** Felet från senaste startförsöket (null = inget); görs till text här. */
+  startError: unknown;
   onSetLang: (l: Lang) => void;
   onSetMode: (m: GameMode) => void;
   onStart: () => void;
@@ -32,48 +34,48 @@ export default function StartDialog({
   onCancel,
   onOpenHelp,
 }: Props) {
+  const { t } = useI18n();
   return (
     <Overlay>
-      <h2>Ord på Ord</h2>
+      <h2>{t.title.full}</h2>
       <p>
-        Släpp ner bokstavsbrickor och bilda så många och så långa ord som möjligt – vågrätt och
-        lodrätt. Orden ligger kvar på brädet och kan byggas ut till längre ord.{" "}
+        {t.intro}{" "}
         <button className="linkbtn" onClick={onOpenHelp}>
-          Hur man spelar
+          {t.howToPlay}
         </button>
       </p>
 
-      <h2 style={muteH2}>Ordlista</h2>
+      <h2 style={muteH2}>{t.start.dictionary}</h2>
       <div className="langrow">
         <button className={lang === "sv" ? "sel" : ""} onClick={() => onSetLang("sv")}>
-          Svenska
+          {t.gameLangs.sv}
         </button>
         <button className={lang === "en" ? "sel" : ""} onClick={() => onSetLang("en")}>
-          Engelska
+          {t.gameLangs.en}
         </button>
       </div>
 
-      <h2 style={{ ...muteH2, marginTop: 14 }}>Spelläge</h2>
+      <h2 style={{ ...muteH2, marginTop: 14 }}>{t.start.mode}</h2>
       <div className="langrow">
         <button className={mode === "random" ? "sel" : ""} onClick={() => onSetMode("random")}>
-          Slumpmässigt
+          {t.start.random}
         </button>
         <button className={mode === "daily" ? "sel" : ""} onClick={() => onSetMode("daily")}>
-          Dagens brickor
+          {t.start.daily}
         </button>
       </div>
       <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 0" }}>
-        Dagens brickor är samma för alla som spelar samma dag – tävla på lika villkor.
+        {t.start.dailyNote}
       </p>
 
-      {startError && <div className="hserror">{startError}</div>}
+      {startError != null && <div className="hserror">{errorText(t, startError)}</div>}
 
       <div className="btnrow" style={{ marginTop: 18 }}>
         <button className="primary" style={{ flex: 1 }} disabled={starting} onClick={onStart}>
-          {starting ? "Laddar…" : "Starta spelet"}
+          {starting ? t.loading : t.start.startGame}
         </button>
         <button disabled={starting} onClick={onCancel}>
-          Avbryt
+          {t.cancel}
         </button>
       </div>
     </Overlay>

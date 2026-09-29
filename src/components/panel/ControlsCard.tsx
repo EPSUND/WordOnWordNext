@@ -1,6 +1,7 @@
 import { canUseJoker, jokerIsLastTile, type GameState } from "../../game/reducer";
 import { TOTAL_BLOCKS } from "../../lib/engine/constants";
 import { useCoarsePointer } from "../../hooks/useCoarsePointer";
+import { useI18n } from "../../i18n/I18n";
 import Icon from "../icons/Icon";
 import "./ControlsCard.css";
 
@@ -21,6 +22,8 @@ export default function ControlsCard({
   onFinishArrange,
   onShowResult,
 }: Props) {
+  const { t } = useI18n();
+  const c = t.controls;
   const coarse = useCoarsePointer();
   const handLeft = state.startHand.filter((h) => h.r == null).length;
   const nextTile = state.phase === "arrange" ? "–" : state.nextLetter || "–";
@@ -41,9 +44,7 @@ export default function ControlsCard({
   const undoHidden = state.undosLeft <= 0;
   const undoDisabled = !(state.phase === "play" && state.undoSnapshot != null);
 
-  // Verbet skiljer sig: på touch trycker man, med mus klickar man.
-  const verb = coarse ? "Tryck" : "Klicka";
-
+  // Texterna som säger "klicka"/"tryck" tar coarse: på touch trycker man.
   return (
     <div className="card controls">
       {/* Efter spelets slut är brädet kvar att titta på, men "nästa bricka"
@@ -53,28 +54,19 @@ export default function ControlsCard({
           blir "–" + fel hjälptext bara förvirrande. */}
       {state.phase !== "over" && !(coarse && state.phase === "arrange") && (
         <>
-          <h2>Nästa bricka</h2>
+          <h2>{c.nextTile}</h2>
           <div className="nextwrap">
             {/* "Nästa"-etiketten visas bara på mobil, där h2:n ovan är dold –
                 utan den förväxlas nästa-brickan med den aktiva i dropzonen. */}
             <div className="nextcol">
-              <span className="nextcap">Nästa</span>
+              <span className="nextcap">{t.status.next}</span>
               <div className="minitile">{nextTile}</div>
             </div>
             {/* Under sista draget finns ingen bricka att flytta – då ersätts
                 hjälptexten av jokernotisen nedan. */}
             {!lastJokerWaiting && (
               <div className="hint">
-                {coarse ? (
-                  "Håll fingret på en kolumn – brickan ovanför brädet flyttar dit. Släpp för att lägga den."
-                ) : (
-                  <>
-                    Flytta med <kbd>←</kbd>
-                    <kbd>→</kbd> eller musen.
-                    <br />
-                    Släpp med <kbd>␣</kbd>/<kbd>↓</kbd> eller klick.
-                  </>
-                )}
+                {coarse ? c.hintTouch : c.hintMouse}
               </div>
             )}
           </div>
@@ -82,34 +74,30 @@ export default function ControlsCard({
       )}
       {(lastJokerWaiting || lastJokerInHand) && (
         <div className="prepnote">
-          {lastJokerWaiting
-            ? `Slut på vanliga brickor – jokern är din sista bricka och måste läggas för att spelet ska ta slut. Hitta den bokstav som ger mest poäng och ${verb.toLowerCase()} på “Använd joker”.`
-            : "Sista draget: lägg jokern där den ger mest poäng – sedan är spelet slut."}
+          {lastJokerWaiting ? c.lastJokerWaiting(coarse) : c.lastJokerInHand}
         </div>
       )}
       {state.phase === "arrange" && (
         <div className="prepnote">
-          {handLeft > 0
-            ? `Placera dina 5 startbrickor: välj en bricka och ${verb.toLowerCase()} i en kolumn – den faller till botten eller staplas (${handLeft} kvar). ${verb} på en placerad bricka för att ta bort den.`
-            : `Alla 5 placerade – ${verb.toLowerCase()} på en bricka för att flytta den, eller “Börja spela”.`}
+          {handLeft > 0 ? c.arrange(coarse, handLeft) : c.arranged(coarse)}
         </div>
       )}
       {state.phase === "arrange" && (
         <button className="startbtn2" disabled={handLeft !== 0} onClick={onFinishArrange}>
-          Börja spela
+          {c.startPlaying}
           <Icon name="next" className="btnicon trail big" />
         </button>
       )}
       {state.phase !== "over" && !jokerHidden && (
         <button className="jokerbtn" disabled={jokerDisabled} onClick={onUseJoker}>
-          🃏 Använd joker {!coarse && <kbd>J</kbd>}
+          🃏 {c.useJoker} {!coarse && <kbd>J</kbd>}
         </button>
       )}
       {state.phase !== "over" && !undoHidden && (
         <button className="undobtn" disabled={undoDisabled} onClick={onUndo}>
           <Icon name="undo" className="btnicon lead" />
-          Ångra drag
-          <span className="undoleft" title={`${state.undosLeft} ångra kvar`}>
+          {c.undo}
+          <span className="undoleft" title={c.undosLeft(state.undosLeft)}>
             {state.undosLeft}
           </span>
           {!coarse && <kbd>Z</kbd>}
@@ -117,7 +105,7 @@ export default function ControlsCard({
       )}
       {state.phase === "over" && onShowResult && (
         <button className="startbtn2" onClick={onShowResult}>
-          Visa resultat
+          {c.showResult}
         </button>
       )}
     </div>

@@ -10,4 +10,5 @@
 .icon-trophy{color:var(--ring);width:1.4em;height:1.4em}          /* pokal: guldgul */
 .icon-sound-on,.icon-sound-off{color:var(--muted);width:1.4em;height:1.4em}  /* högtalare: grå */
 .icon-help{width:1.4em;height:1.4em}                              /* info: samma storlek som ljud */
+.icon-globe{width:1.4em;height:1.4em}                             /* språk: likaså */
 .icon-sound-on .wave{stroke:#5aa9e6}            /* ljudvågor: blå */

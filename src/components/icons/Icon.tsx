@@ -15,7 +15,8 @@ export type IconName =
   | "sound-off"
   | "trophy"
   | "undo"
-  | "help";
+  | "help"
+  | "globe";
 
 const PATHS: Record<IconName, ReactNode> = {
   first: (
@@ -107,6 +108,14 @@ const PATHS: Record<IconName, ReactNode> = {
       <circle cx="8" cy="4.8" r="1.05" />
       <rect x="7.05" y="6.7" width="1.9" height="4.9" rx="0.9" />
     </>
+  ),
+  // Språk: jordglob (ring + meridian + ekvator), samma ring som help.
+  globe: (
+    <g fill="none" stroke="currentColor" strokeWidth="1.3">
+      <circle cx="8" cy="8" r="6.3" />
+      <ellipse cx="8" cy="8" rx="2.6" ry="6.3" />
+      <path d="M1.7 8 H14.3" />
+    </g>
   ),
 };
 

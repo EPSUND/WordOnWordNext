@@ -5,7 +5,16 @@ h1{
   letter-spacing:.06em;color:var(--tile1);
 }
 h1 .pa{color:var(--ring);font-style:italic;letter-spacing:.02em}
+/* "WORD on WORD" är ~⅓ bredare än "ORD på ORD". Headern är inte bredare än
+   brädet + panelen (--content-w), och på skrivbord ska rubriken och fem knappar
+   rymmas på en rad – därför en något mindre rubrik på engelska. :lang följer
+   <html lang>, som sätts efter gränssnittets språk (I18nProvider). Bara i
+   headern: välkomstsidans h1 har egen storlek och gott om plats. */
+header h1:lang(en){font-size:clamp(26px,4vw,34px)}
 .header-btns{display:flex;gap:8px;align-items:center}
+/* Ikonknapparna (allt utom Nytt spel) får smalare sidopadding än textknappar –
+   ikonen är kvadratisk. Selektorn slår basens touch-padding för button (base.css). */
+.header-btns .iconbtn{padding-left:9px;padding-right:9px}
 
 @media (max-width:700px), (max-height:600px){
   header{margin-bottom:8px}
@@ -16,24 +25,28 @@ h1 .pa{color:var(--ring);font-style:italic;letter-spacing:.02em}
    bredden. Landskaps­läget hanteras av regeln ovan (två­kolumners, --content-w). */
 @media (max-width:700px) and (min-height:601px){
   header{width:calc(var(--tile-size)*7 + 16px);max-width:100%}
+  .header-btns{gap:6px}
 }
 @media (max-height:600px){
   h1{font-size:22px}
+  header h1:lang(en){font-size:20px}
   header{margin-bottom:6px}
 }
 @media (pointer:coarse){
   .header-btns button{min-height:40px}
 }
 /* Liggande mobil: rubrik och knappar MÅSTE rymmas på en rad. Headern är inte
-   bredare än brädet + panelen (--content-w, ~490–550px här), så de fyra
-   touchknapparna bröts ned på en egen rad. Det åt ~40px av höjdbudgeten
-   (--chrome i base.css) och brädets nedersta rad hamnade utanför skärmen.
-   Topplista blir därför bara pokalen (aria-label på knappen) och knapparna
-   smalare. Bara touch: på ett lågt skrivbordsfönster är brickorna större, så
-   --content-w är bredare och allt får plats med text. */
+   bredare än brädet + panelen (--content-w, ~490–550px här), så knapparna
+   bröts ned på en egen rad. Det åt ~40px av höjdbudgeten (--chrome i
+   base.css) och brädets nedersta rad hamnade utanför skärmen. Därför
+   tightare knappar här. Blir det ändå för trångt (annat typsnitt, t.ex.
+   Android utan Georgia) kortas rubriken med ellips i stället för att knapparna
+   bryts ned. Bara touch: på ett lågt skrivbordsfönster är brickorna större,
+   så --content-w är bredare och allt får plats. */
 @media (max-height:600px) and (pointer:coarse){
   header{flex-wrap:nowrap}
+  h1{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .header-btns{gap:6px;flex:none}
   .header-btns button{padding-left:10px;padding-right:10px}
-  .header-btns .btnlabel{display:none}
-  .header-btns .btnicon.lead{margin-right:0}
+  .header-btns .iconbtn{padding-left:7px;padding-right:7px}
 }

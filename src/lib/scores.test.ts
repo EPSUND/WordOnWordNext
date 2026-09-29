@@ -11,7 +11,8 @@ import {
 } from "./scores";
 
 /* Inga riktiga nätverksanrop – vi kontrollerar URL:er, body och felhantering.
-   Topplistan ska kasta vid fel (ingen tyst fallback), felen visas i dialogerna. */
+   Topplistan ska kasta vid fel (ingen tyst fallback), felen visas i dialogerna.
+   Felen är FetchFailed (vad + status); texten skapas i UI:t på rätt språk. */
 
 const entry = (over: Partial<ScoreEntry> = {}): ScoreEntry => ({
   id: 1,
@@ -70,14 +71,14 @@ describe("loadScores", () => {
     await expect(loadScores("sv")).resolves.toEqual([entry()]);
   });
 
-  it("kastar ett begripligt fel vid nätverksfel", async () => {
+  it("kastar ett eget fel vid nätverksfel i stället för fetch:s", async () => {
     fetchMock.mockRejectedValueOnce(new Error("boom"));
-    await expect(loadScores("sv")).rejects.toThrow(/nätverksfel/);
+    await expect(loadScores("sv")).rejects.toMatchObject({ what: "scores", status: null });
   });
 
   it("kastar med statuskoden vid API-fel", async () => {
     fetchMock.mockResolvedValueOnce(new Response("nope", { status: 500 }));
-    await expect(loadScores("sv")).rejects.toThrow(/500/);
+    await expect(loadScores("sv")).rejects.toMatchObject({ what: "scores", status: 500 });
   });
 });
 
@@ -121,7 +122,7 @@ describe("loadBestPlayerScores", () => {
 
   it("kastar vid API-fel (ingen tyst fallback)", async () => {
     fetchMock.mockResolvedValueOnce(new Response("nope", { status: 500 }));
-    await expect(loadBestPlayerScores("sv")).rejects.toThrow(/500/);
+    await expect(loadBestPlayerScores("sv")).rejects.toMatchObject({ what: "scores", status: 500 });
   });
 });
 
@@ -236,11 +237,11 @@ describe("submitScore", () => {
 
   it("kastar vid nätverksfel", async () => {
     fetchMock.mockRejectedValueOnce(new Error("boom"));
-    await expect(submitScore(newScore)).rejects.toThrow(/nätverksfel/);
+    await expect(submitScore(newScore)).rejects.toMatchObject({ what: "save", status: null });
   });
 
   it("kastar med statuskoden när servern nekar", async () => {
     fetchMock.mockResolvedValueOnce(new Response("", { status: 401 }));
-    await expect(submitScore(newScore)).rejects.toThrow(/401/);
+    await expect(submitScore(newScore)).rejects.toMatchObject({ what: "save", status: 401 });
   });
 });

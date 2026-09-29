@@ -1,0 +1,8 @@
+/* Språkdialogen. Knapparna är en .langrow (samma .sel-markering som i Start och
+   Topplista, se Overlay.css) men staplade, så att fler språk får plats. */
+/* .dialog.langdialog och inte bara .langdialog: samma specificitet som .dialog
+   hade gjort att CSS-ordningen avgjorde vilken max-width som vann. */
+.dialog.langdialog{max-width:340px}
+.langlist{flex-direction:column}
+/* Selektorn måste vara minst lika specifik som .dialog p i Overlay.css. */
+.dialog p.langnote{font-size:12.5px;margin:12px 0 0}

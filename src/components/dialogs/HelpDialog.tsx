@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useI18n } from "../../i18n/I18n";
 import type { Lang } from "../../lib/types";
 import { SINGLES, VALUES } from "../../lib/engine/constants";
 import Overlay from "./Overlay";
 import "./HelpDialog.css";
 
 interface Props {
+  /** Spelets språk: styr bokstavsvärdena och enbokstavsorden, inte texterna. */
   lang: Lang;
   onClose: () => void;
 }
@@ -20,6 +22,8 @@ function valueTiers(lang: Lang): [number, string[]][] {
 }
 
 export default function HelpDialog({ lang, onClose }: Props) {
+  const { t } = useI18n();
+  const h = t.help;
   const [view, setView] = useState<"main" | "scoring">("main");
 
   if (view === "scoring") {
@@ -28,20 +32,17 @@ export default function HelpDialog({ lang, onClose }: Props) {
     return (
       <Overlay>
         <button className="linkbtn help-back" onClick={() => setView("main")}>
-          ← Tillbaka
+          {h.back}
         </button>
-        <h2>Poängsättning</h2>
-        <p>
-          Ett ords poäng är summan av dess bokstavspoäng plus en <b>längdbonus</b>. Bonusen är{" "}
-          <b>längden * längden − 1</b>, så den växer snabbt med längre ord.
-        </p>
+        <h2>{h.scoringTitle}</h2>
+        <p>{h.scoringIntro}</p>
 
-        <h2 className="help-h">Bokstävernas värde</h2>
+        <h2 className="help-h">{h.letterValues}</h2>
         <table className="help-table">
           <thead>
             <tr>
-              <th>Poäng</th>
-              <th>Bokstäver</th>
+              <th>{h.colPoints}</th>
+              <th>{h.colLetters}</th>
             </tr>
           </thead>
           <tbody>
@@ -54,37 +55,31 @@ export default function HelpDialog({ lang, onClose }: Props) {
           </tbody>
         </table>
 
-        <h2 className="help-h">Längdbonus</h2>
+        <h2 className="help-h">{h.lengthBonus}</h2>
         <table className="help-table">
           <thead>
             <tr>
-              <th>Ordlängd</th>
-              <th>Bonus</th>
+              <th>{h.colLength}</th>
+              <th>{h.colBonus}</th>
             </tr>
           </thead>
           <tbody>
             {[2, 3, 4, 5, 6, 7].map((n) => (
               <tr key={n}>
-                <td className="val">{n} bokstäver</td>
+                <td className="val">{h.nLetters(n)}</td>
                 <td className="letters">+{n * n - 1}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        <p style={{ marginTop: 14 }}>
-          Exempel: ett fyrabokstavsord där bokstäverna är värda 6 poäng ger 6 + 15 ={" "}
-          <b>21 poäng</b>.
-        </p>
+        <p style={{ marginTop: 14 }}>{h.example}</p>
 
-        <div className="help-joker">
-          <b>Enbokstavsord</b> – {singles.join(" och ")} räknas som ord (utan längdbonus), men bara
-          om bokstaven inte redan ingår i ett annat ord.
-        </div>
+        <div className="help-joker">{h.singles(singles)}</div>
 
         <div className="btnrow" style={{ marginTop: 18 }}>
           <button className="primary" style={{ flex: 1 }} onClick={onClose}>
-            Stäng
+            {t.close}
           </button>
         </div>
       </Overlay>
@@ -93,62 +88,34 @@ export default function HelpDialog({ lang, onClose }: Props) {
 
   return (
     <Overlay>
-      <h2>Så spelar du</h2>
-      <p>
-        Släpp ner bokstavsbrickor och bilda så många och så långa ord som möjligt – vågrätt och
-        lodrätt. Orden ligger kvar på brädet och kan byggas ut till längre ord.
-      </p>
+      <h2>{h.title}</h2>
+      <p>{t.intro}</p>
 
       <ol className="help-steps">
-        <li>
-          <span className="num">1</span>
-          <span className="txt">
-            Det börjar med att du får <b>5 startbrickor</b>. Placera dem i valfria kolumner – de
-            faller till botten och kan staplas ovanpå varandra. Bilda så långa ord du kan och
-            förbered för vidare spel.
-          </span>
-        </li>
-        <li>
-          <span className="num">2</span>
-          <span className="txt">
-            Efter start faller resten av brickorna <b>en efter en</b>. Välj kolumn och släpp brickan
-            där den gör mest nytta.
-          </span>
-        </li>
-        <li>
-          <span className="num">3</span>
-          <span className="txt">
-            Bilda så många och så långa ord som möjligt. Längre ord ger betydligt mer poäng, så bygg
-            gärna ut ord du redan lagt.
-          </span>
-        </li>
+        {h.steps.map((step, i) => (
+          <li key={i}>
+            <span className="num">{i + 1}</span>
+            <span className="txt">{step}</span>
+          </li>
+        ))}
       </ol>
 
-      <div className="help-joker">
-        <b>Joker</b> – en bricka med valfri bokstav som du kan använda när du vill. Klicka på
-        jokerknappen eller tryck <kbd>J</kbd> (på dator). Den går bara att använda en gång. Har du
-        den kvar när andra brickor är slut är den ditt sista drag – du bestämmer själv när du öppnar
-        jokerväljaren, och spelet tar slut när jokern är lagd.
-      </div>
+      <div className="help-joker">{h.joker}</div>
 
-      <h2 className="help-h">Poäng</h2>
+      <h2 className="help-h">{h.points}</h2>
       <p>
-        Varje bokstav har ett värde och när de används i ett ord får man dess poäng. Ovanpå det får
-        man en längdbonus för ord – ju längre ord, desto större bonus.{" "}
+        {h.pointsText}{" "}
         <button className="linkbtn" onClick={() => setView("scoring")}>
-          Mer info om poängsättning
+          {h.moreScoring}
         </button>
       </p>
 
-      <h2 className="help-h">Dagens brickor</h2>
-      <p>
-        I läget <b>Dagens brickor</b> får alla som spelar samma dag exakt samma brickor – tävla på
-        lika villkor på topplistan.
-      </p>
+      <h2 className="help-h">{h.dailyTitle}</h2>
+      <p>{h.dailyText}</p>
 
       <div className="btnrow" style={{ marginTop: 18 }}>
         <button className="primary" style={{ flex: 1 }} onClick={onClose}>
-          Stäng
+          {t.close}
         </button>
       </div>
     </Overlay>

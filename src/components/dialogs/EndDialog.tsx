@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { errorText, useI18n } from "../../i18n/I18n";
 import type { GameMode, Lang, ScoreEntry } from "../../lib/types";
 import { loadForMode, submitScore } from "../../lib/scores";
 import HighscoreTable from "./HighscoreTable";
@@ -33,12 +34,14 @@ export default function EndDialog({
   saved,
   onSaved,
 }: Props) {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  // Felen sparas som de är och blir text vid renderingen (errorText).
+  const [saveError, setSaveError] = useState<unknown>(null);
   const [entries, setEntries] = useState<ScoreEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [highlightIdx, setHighlightIdx] = useState<number | null>(null);
 
   useEffect(() => {
@@ -47,7 +50,7 @@ export default function EndDialog({
     setError(null);
     loadForMode(mode, dailyDate, lang)
       .then((list) => alive && (setEntries(list), setLoading(false)))
-      .catch((e) => alive && (setError(e.message), setLoading(false)));
+      .catch((e) => alive && (setError(e), setLoading(false)));
     return () => {
       alive = false;
     };
@@ -55,14 +58,14 @@ export default function EndDialog({
   }, []);
 
   const onSave = async () => {
-    const finalName = name.trim().slice(0, 18) || "Anonym";
+    const finalName = name.trim().slice(0, 18) || t.end.anonymous;
     setSaving(true);
     setSaveError(null);
     let newId: number | null = null;
     try {
       newId = await submitScore({ name: finalName, score, words: numWords, lang, bestWord, daily: mode === "daily" ? dailyDate : null });
     } catch (e) {
-      setSaveError((e instanceof Error ? e.message : "Fel") + " Försök igen.");
+      setSaveError(e);
       setSaving(false);
       return;
     }
@@ -92,44 +95,48 @@ export default function EndDialog({
       setHighlightIdx(idx >= 0 ? idx : null);
     } catch (e) {
       setEntries(null);
-      setError(e instanceof Error ? e.message : "Fel");
+      setError(e);
     }
     setSaving(false);
   };
 
-  const label = mode === "daily" ? "Dagens topplista – " + dailyDate : "Topplista";
+  const label = mode === "daily" ? t.end.dailyBoard(dailyDate ?? "") : t.highscores;
 
   return (
     <Overlay>
-      <h2>Spelet är slut!</h2>
+      <h2>{t.end.title}</h2>
       <div className="final">
         <div>
-          <b>{score}</b>poäng
+          <b>{score}</b>{t.end.points}
         </div>
         <div>
-          <b>{numWords}</b>ord
+          <b>{numWords}</b>{t.end.words}
         </div>
         <div>
-          <b>{bestWord || "–"}</b>bästa ord
+          <b>{bestWord || "–"}</b>{t.end.bestWord}
         </div>
       </div>
 
       {!saved && (
         <div>
-          <p style={{ marginBottom: 6 }}>Skriv ditt namn för topplistan:</p>
+          <p style={{ marginBottom: 6 }}>{t.end.enterName}</p>
           <div style={{ display: "flex", gap: 8 }}>
             <input
               type="text"
               maxLength={18}
-              placeholder="Ditt namn"
+              placeholder={t.end.namePlaceholder}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
             <button className="primary" disabled={saving} onClick={onSave}>
-              Spara
+              {t.end.save}
             </button>
           </div>
-          {saveError && <div className="hserror">{saveError}</div>}
+          {saveError != null && (
+            <div className="hserror">
+              {errorText(t, saveError)} {t.end.retry}
+            </div>
+          )}
         </div>
       )}
 
@@ -146,17 +153,22 @@ export default function EndDialog({
         >
           {label}
         </h2>
-        <HighscoreTable entries={entries} loading={loading} error={error} highlightIdx={highlightIdx} />
+        <HighscoreTable
+          entries={entries}
+          loading={loading}
+          error={error != null ? errorText(t, error) : null}
+          highlightIdx={highlightIdx}
+        />
       </div>
 
       <div className="btnrow" style={{ marginTop: 16 }}>
         {/* Stäng låter spelaren se på det färdiga brädet i stället för att
             tvingas starta om direkt. Nytt spel startas från huvudvyn. */}
         <button style={{ flex: 1 }} onClick={onClose}>
-          Stäng
+          {t.close}
         </button>
         <button className="primary" style={{ flex: 1 }} onClick={onAgain}>
-          Spela igen
+          {t.end.playAgain}
         </button>
       </div>
     </Overlay>

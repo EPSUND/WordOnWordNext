@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { useI18n } from "../../i18n/I18n";
 import type { ScoreEntry } from "../../lib/types";
 import Icon from "../icons/Icon";
 import "./HighscoreTable.css";
@@ -33,6 +34,7 @@ export default function HighscoreTable({
   highlightIdx,
   rankByScore,
 }: Props) {
+  const { t } = useI18n();
   const sorted = (entries ?? []).slice().sort((a, b) => b.score - a.score);
   const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
 
@@ -70,15 +72,15 @@ export default function HighscoreTable({
         <tbody>
           <tr>
             <th>#</th>
-            <th>Namn</th>
-            <th>Poäng</th>
-            <th>Bästa ord</th>
-            <th>Mer info</th>
+            <th>{t.hs.colName}</th>
+            <th>{t.hs.colScore}</th>
+            <th>{t.hs.colBestWord}</th>
+            <th>{t.hs.colMore}</th>
           </tr>
           {loading && (
             <tr>
               <td colSpan={COLS} style={{ color: "var(--muted)" }}>
-                Laddar…
+                {t.loading}
               </td>
             </tr>
           )}
@@ -92,7 +94,7 @@ export default function HighscoreTable({
           {!loading && !error && sorted.length === 0 && (
             <tr>
               <td colSpan={COLS} style={{ color: "var(--muted)" }}>
-                Inga resultat ännu.
+                {t.hs.empty}
               </td>
             </tr>
           )}
@@ -131,10 +133,10 @@ export default function HighscoreTable({
                     <tr className="hsdetail">
                       <td colSpan={COLS}>
                         <span className="hsdetailitem">
-                          Antal ord: <b>{e.words}</b>
+                          {t.hs.wordCount} <b>{e.words}</b>
                         </span>
                         <span className="hsdetailitem hswhen">
-                          Spelad: <b>{fmtWhen(e.created)}</b>
+                          {t.hs.played} <b>{fmtWhen(e.created)}</b>
                         </span>
                       </td>
                     </tr>
@@ -147,30 +149,30 @@ export default function HighscoreTable({
 
       {!loading && !error && sorted.length > PAGE_SIZE && (
         <div className="hspager">
-          <button onClick={() => setPage(0)} disabled={curPage === 0} aria-label="Första sidan">
+          <button onClick={() => setPage(0)} disabled={curPage === 0} aria-label={t.hs.firstPage}>
             <Icon name="first" className="hsicon" />
           </button>
           <button
             onClick={() => setPage(curPage - 1)}
             disabled={curPage === 0}
-            aria-label="Föregående sida"
+            aria-label={t.hs.prevPage}
           >
             <Icon name="prev" className="hsicon" />
           </button>
           <span className="hspageinfo">
-            {start + 1}–{Math.min(start + PAGE_SIZE, sorted.length)} av {sorted.length}
+            {t.hs.pageInfo(start + 1, Math.min(start + PAGE_SIZE, sorted.length), sorted.length)}
           </span>
           <button
             onClick={() => setPage(curPage + 1)}
             disabled={curPage >= pageCount - 1}
-            aria-label="Nästa sida"
+            aria-label={t.hs.nextPage}
           >
             <Icon name="next" className="hsicon" />
           </button>
           <button
             onClick={() => setPage(pageCount - 1)}
             disabled={curPage >= pageCount - 1}
-            aria-label="Sista sidan"
+            aria-label={t.hs.lastPage}
           >
             <Icon name="last" className="hsicon" />
           </button>

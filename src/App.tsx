@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useGame } from "./hooks/useGame";
 import { useTileSize } from "./hooks/useTileSize";
 import type { GameMode, Lang } from "./lib/types";
+import { useI18n } from "./i18n/I18n";
+import { gameLangFor } from "./i18n/langs";
 import Header from "./components/Header";
 import Welcome from "./components/Welcome";
 import Board from "./components/board/Board";
@@ -14,6 +16,7 @@ import JokerDialog from "./components/dialogs/JokerDialog";
 import EndDialog from "./components/dialogs/EndDialog";
 import HighscoreDialog from "./components/dialogs/HighscoreDialog";
 import HelpDialog from "./components/dialogs/HelpDialog";
+import LanguageDialog from "./components/dialogs/LanguageDialog";
 
 export default function App() {
   // StartDialog styrs av en egen flagga, INTE av spel-phase: "Nytt spel" ska
@@ -22,16 +25,21 @@ export default function App() {
   const [startOpen, setStartOpen] = useState(false);
   const [hsOpen, setHsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   // Spelets tangenter pausas medan en av de här dialogerna ligger över brädet –
   // annars släppte t.ex. mellanslag en bricka bakom Hjälp. Jokerdialogen styrs
   // av phase och hanteras i game/keys.ts; slutdialogen likaså (phase over).
-  const { state, start, starting, startError, actions } = useGame(startOpen || hsOpen || helpOpen);
+  const { state, start, starting, startError, actions } = useGame(
+    startOpen || hsOpen || helpOpen || langOpen,
+  );
+  const { lang: uiLang, setLang: setUiLang } = useI18n();
   const tile = useTileSize();
   // Startdialogens val gäller NÄSTA spel. De är skilda från state.lang/state.mode,
   // som hör till det pågående (eller avslutade) spelet och bara sätts av start –
   // annars kunde ett språkbyte + Avbryt skriva om ett avslutat spel.
   const [startMode, setStartMode] = useState<GameMode>("random");
-  const [startLang, setStartLang] = useState<Lang>("sv");
+  // Förvalt: ordlistan som hör till gränssnittets språk (se LanguageDialog nedan).
+  const [startLang, setStartLang] = useState<Lang>(() => gameLangFor(uiLang));
   // Innan något spel startats finns bara startdialogens val att visa i Hjälp och
   // Topplista; därefter spelets språk.
   const shownLang = state.phase === "idle" ? startLang : state.lang;
@@ -56,6 +64,7 @@ export default function App() {
       <Header
         onOpenHighscores={() => setHsOpen(true)}
         onOpenHelp={() => setHelpOpen(true)}
+        onOpenLanguage={() => setLangOpen(true)}
         onNewGame={() => setStartOpen(true)}
       />
 
@@ -97,6 +106,7 @@ export default function App() {
           onPlay={() => setStartOpen(true)}
           onOpenHighscores={() => setHsOpen(true)}
           onOpenHelp={() => setHelpOpen(true)}
+          onOpenLanguage={() => setLangOpen(true)}
         />
       )}
 
@@ -162,6 +172,22 @@ export default function App() {
       {/* Öppnad från startdialogen visar hjälpen värdena för språket man väljer. */}
       {helpOpen && (
         <HelpDialog lang={startOpen ? startLang : shownLang} onClose={() => setHelpOpen(false)} />
+      )}
+
+      {langOpen && (
+        <LanguageDialog
+          onChoose={(l) => {
+            // Byter bara texterna. Ett pågående eller avslutat spel behåller sin
+            // ordlista (state.lang); det som ändras är förvalet för NÄSTA spel,
+            // och det syns och går att ändra i startdialogen.
+            if (l !== uiLang) {
+              setUiLang(l);
+              setStartLang(gameLangFor(l));
+            }
+            setLangOpen(false);
+          }}
+          onClose={() => setLangOpen(false)}
+        />
       )}
     </>
   );

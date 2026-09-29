@@ -14,6 +14,7 @@ högsignal – den läses in varje session.
 - Man **arrangerar själv sina 5 startbrickor** innan resten faller en och en.
 - **Dagligt läge**: samma brickor för alla som spelar samma dag (tävla på lika villkor).
 - **Global topplista** via Supabase, filtrerbar per språk och per dag.
+- **Gränssnittet på svenska och engelska** (glob-knappen), oberoende av vilken ordlista man spelar med.
 
 Live: https://epsund.github.io/WordOnWordNext/
 
@@ -48,7 +49,13 @@ src/lib/engine/     Ren spellogik, ingen DOM:
   bag.ts              makeBag (grupperad, mjukt dämpad, interfolierad – se §6), sampleLetter
   words.ts            wordScore, isValidWord, bestWordsInLine (DP), scanLine, computeSingles, scoreAndCount
   grid.ts             landingRow, collapseColumn, ensureColPlayable, cellXY, PAD
-src/lib/            dict.ts (fetch + cache), scores.ts (Supabase), sound.ts (WebAudio), types.ts
+src/lib/            dict.ts (fetch + cache), scores.ts (Supabase), sound.ts (WebAudio), types.ts,
+                    errors.ts (FetchFailed: vad + status, ingen text – se §5)
+src/i18n/           Gränssnittets språk (se §5):
+  langs.ts            UiLang, UI_LANGS, webbläsardetektering, lagring (localStorage), gameLangFor
+  sv.tsx              Alla svenska UI-texter; FACIT – typen Strings = typeof sv
+  en.tsx              Engelska (typad som Strings ⇒ samma nycklar, annars kompilerar det inte)
+  I18n.tsx            I18nProvider (sätter <html lang> + sidtitel), useI18n(), errorText()
 src/game/reducer.ts Hela speltillståndet som en REN reducer (state + actions)
 src/game/keys.ts    keyToAction: tangent → action per fas (ren; useGame gör DOM-kollarna – se §5)
 src/hooks/          useGame.ts (reducer-glue, ljud/tangentbord/async start)
@@ -64,7 +71,7 @@ src/components/     Grupperade efter funktion. Foo.css bredvid Foo.tsx, importer
                         dem olika – se §5)
   dialogs/            Overlay (chrome + det dialogerna delar) och
                         StartDialog, JokerDialog, EndDialog, HighscoreDialog,
-                        HighscoreTable
+                        HighscoreTable, HelpDialog, LanguageDialog
   icons/              Icon.tsx – delade SVG-ikoner (namn-register, currentColor,
                         1em). Ritas som SVG, inte Unicode-glyfer, så pilarna ser
                         likadana ut på desktop och mobil (glyfer blev färgemoji)
@@ -89,9 +96,22 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
   (`startLang`/`startMode` i `App`) gäller *nästa* spel. Ett byte + Avbryt får aldrig ändra ett
   pågående eller avslutat spel, eftersom brickvärden, topplistan, Spara och "Spela igen" läser
   `state.lang`.
+- **Två olika språk – blanda inte ihop dem.** *Spelets* språk (`Lang`, `state.lang`/`startLang`)
+  styr ordlista, bokstavsvärden, enbokstavsord och topplista. *Gränssnittets* språk (`UiLang`,
+  `useI18n()`) styr bara texterna. Ett byte i språkdialogen (glob-knappen i headern och på
+  välkomstsidan) rör aldrig ett pågående spel; det sätter bara om `startLang` – förvalet för nästa
+  spel, som syns i startdialogen. Hjälpens poängtabeller och välkomstsidans brickor visar därför
+  spelets/förvalets värden medan texten följer gränssnittet.
+- **Inga hårdkodade UI-strängar i komponenterna.** Hämta `t` ur `useI18n()`. Parametriserade texter
+  är funktioner (`t.controls.arrange(coarse, left)`), rik text är JSX i `sv.tsx`/`en.tsx`. Ny text
+  läggs i `sv.tsx` och sedan i `en.tsx` (kompilatorn kräver det).
+- **Fel från lib är `FetchFailed`** (`what`: dict/scores/save, `status`: HTTP-kod eller `null` =
+  nätverksfel), inte färdig text. Komponenterna sparar felet som det är (`unknown`) och visar
+  `errorText(t, e)` – så följer meddelandet med vid språkbyte, och okända fel (t.ex. en
+  `SyntaxError` från `r.json()`) blir en allmän text i stället för webbläsarens.
 - Faser: `idle → arrange → play → fall → joker → over`. Overlays visas utifrån `phase`.
 - **Tangentbordet**: `useGame` lyssnar på `keydown` på `window` och översätter med `keyToAction`
-  (`src/game/keys.ts`). Spelets tangenter **pausas medan Start, Hjälp eller Topplista är öppen**
+  (`src/game/keys.ts`). Spelets tangenter **pausas medan Start, Hjälp, Topplista eller Språk är öppen**
   (`App` skickar in flaggan) och när fokus ligger i ett textfält – annars styr de spelet bakom
   dialogen (mellanslag släppte en bricka bakom Hjälp, `j`/`z` i sökfältet blev joker/ångra).
   Ctrl/Cmd/Alt-kombinationer lämnas åt webbläsaren; släpp/joker/ångra autorepeteras inte, och under
@@ -173,6 +193,20 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
 - **`index.css` måste importeras före `App` i `main.tsx`.** Vite emitterar CSS i modulernas
   evalueringsordning. Kastas de två raderna om hamnar komponent-CSS:en före basen, och basens
   `.card`/`button`-regler skriver över komponenternas (samma specificitet – ordningen avgör).
+- **Gränssnittsspråket sparas i `localStorage` (`wow-ui-lang`), inte i en kaka.** En kaka skickas
+  med varje anrop till `epsund.github.io` (alla Pages-projekt) utan att någon server läser den.
+  Origin delas ändå med de andra projekten, därav prefixet. Regler: skriv **bara vid ett aktivt val**
+  (aldrig det detekterade förvalet – då låstes man vid webbläsarens språk), läs/skriv alltid i
+  `try/catch` (blockerad lagring kastar) och validera värdet vid läsning. Utan sparat val följer
+  språket `navigator.languages` (engelska om inget matchar). Valet är per webbläsare: en iOS-
+  hemskärmsapp har egen lagring, och Safari kan rensa den efter en längre tids inaktivitet – då
+  faller det bara tillbaka på webbläsarens språk. Ett funktionellt val som användaren själv gör och
+  som inte identifierar någon kräver ingen samtyckesbanner.
+- **Headerns bredd är en budget.** Den är låst till `--content-w` (brädet + panelen) och ska rymma
+  rubriken och fem knappar på en rad på skrivbord och i liggande mobil. Därför är alla knappar utom
+  Nytt spel ikonknappar (`.iconbtn`), och den engelska rubriken ("WORD on WORD", ~⅓ bredare) är
+  något mindre via `header h1:lang(en)`. Lägger du till en knapp eller ändrar en text där: mät
+  i 740×360 och 667×375 (liggande) och 360 bred (stående) på båda språken.
 - **Ljud kräver en användargest.** iOS startar `AudioContext` som `suspended`; våra ljud spelas
   från `animationend`-callbacks, alltså utanför en gest. `useGame` anropar `unlockAudio()` vid
   första `pointerdown`/`keydown` – tas det bort blir spelet tyst på iPhone.
@@ -200,7 +234,8 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
 
 ## 10. Konventioner
 
-- **Svenska** i UI-text och kodkommentarer.
+- **Svenska** i kodkommentarer. UI-texten bor i `src/i18n/` – `sv.tsx` är originalet (bevara dess
+  formuleringar), `en.tsx` översättningen. Varje ny text behöver båda.
 - TypeScript `strict` (inkl. `noUnusedLocals`/`noUnusedParameters`).
 - **Trogen port**: bevara originalets beteende och utseende om inte ändring uttryckligen efterfrågas.
 - CSS är uppdelad per komponent men med **globala klassnamn** (samma selektorer som originalet).
@@ -210,15 +245,18 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
 ## 11. Kända begränsningar / TODO
 
 - StrictMode-dubblering i dev (se §7).
+- `index.html` (titel, `<meta description>`, `lang="sv"` före första renderingen) och
+  `manifest.webmanifest` (hemskärmsnamnet "Ord på Ord") är statiska och alltså alltid svenska.
+  `I18nProvider` sätter `<html lang>` och sidtiteln i runtime.
 - Testsviten täcker motor, reducer och lib – **inga komponenttester** (se §12).
 - PWA:n saknar service worker → ingen offlinekörning och ingen automatisk installationsprompt i
   Chrome. Manifest + ikoner finns, så "Lägg till på hemskärmen" fungerar manuellt.
 - På mobil döljs språk och läge i statusraden (de väljs ändå i startdialogen). Ordlistan är inte
   hopfällbar utan bara höjdbegränsad och scrollbar.
 - Mobil i landskap: högerkolumnen (främst kontrollkortet) är högre än skärmen, så sidan scrollar
-  ned till ordlistan. Brädet syns helt överst så länge rubriken ryms på en rad – därför blir
-  Topplista bara en ikon där (`Header.css`). Att få allt på en skärm kräver ett kompaktare
-  kontrollkort i landskap.
+  ned till ordlistan. Brädet syns helt överst så länge rubriken ryms på en rad – därför är
+  headerns knappar ikonknappar och rubriken kortas med ellips i nödfall (`Header.css`, §7). Att
+  få allt på en skärm kräver ett kompaktare kontrollkort i landskap.
 
 ## 12. Tester
 
@@ -238,8 +276,12 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
   - `keys.test.ts` – tangentmappningen per fas, autorepeat och modifierare.
   - `dict.test.ts` – parsning, cache, **regressionsspärren mot CRLF** (§7) och att ett misslyckat
     försök inte cachas (nästa "Starta spelet" hämtar igen i stället för att visa samma fel för evigt).
-  - `scores.test.ts` – Supabase-URL:er, kolumnalias, POST-body och att fel kastas (ingen tyst
-    fallback). Inga riktiga nätverksanrop; `fetch` stubbas.
+  - `scores.test.ts` – Supabase-URL:er, kolumnalias, POST-body och att fel kastas som `FetchFailed`
+    (ingen tyst fallback). Inga riktiga nätverksanrop; `fetch` stubbas.
+  - `i18n/langs.test.ts` – webbläsardetektering, att sparat val vinner, att förvalet **inte** sparas
+    och att blockerad/saknad `localStorage` aldrig kastar (`navigator`/`localStorage` stubbas).
+  - `i18n/strings.test.ts` – `errorText` (låser de svenska feltexterna) och de dynamiska texterna.
+    Att sv och en har samma nycklar sköter kompilatorn.
 - **Riktiga ordlistor i testerna.** `src/test/dictFixture.ts` läser `public/dict-*.txt` från disk
   och matar dem genom `loadDict`, så ordlisteparsningen körs på riktigt. Använder man påhittade
   ord i ett test: verifiera först att de faktiskt finns i ordlistan (t.ex. `DOG` finns även på

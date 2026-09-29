@@ -32,6 +32,9 @@ You drop letter tiles onto a 7×7 board and build as many and as long words as p
 
 A **global highscore list** (via Supabase) can be filtered by language and by day.
 
+The interface is available in **Swedish and English** (globe button), independently of which
+dictionary you play with. The choice is remembered in the browser.
+
 ## Tech stack
 
 - **React 18 + TypeScript**, built with **Vite**.
@@ -47,6 +50,7 @@ src/
   lib/             dict (word lists), scores (Supabase), sound, types
   game/reducer.ts  All game state as a pure reducer / state machine
   hooks/           useGame (glue + effects), useTileSize
+  i18n/            UI language: sv.tsx / en.tsx texts, provider + useI18n, detection/storage
   components/      UI, driven declaratively from state, grouped by function:
                      board/ (grid + tray), panel/ (side cards), dialogs/
 public/            dict-sv.txt / dict-en.txt (word lists)

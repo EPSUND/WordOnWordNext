@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../i18n/I18n";
 import { isSoundOn, toggleSound } from "../lib/sound";
 import Icon from "./icons/Icon";
 import "./Header.css";
@@ -6,33 +7,54 @@ import "./Header.css";
 interface Props {
   onOpenHighscores: () => void;
   onOpenHelp: () => void;
+  onOpenLanguage: () => void;
   onNewGame: () => void;
 }
 
-export default function Header({ onOpenHighscores, onOpenHelp, onNewGame }: Props) {
+export default function Header({ onOpenHighscores, onOpenHelp, onOpenLanguage, onNewGame }: Props) {
+  const { t } = useI18n();
   const [on, setOn] = useState(isSoundOn());
   return (
     <header>
       <h1>
-        ORD <span className="pa">på</span> ORD
+        {t.title.word} <span className="pa">{t.title.on}</span> {t.title.word}
       </h1>
       <div className="header-btns">
-        <button title="Hur man spelar" aria-label="Hur man spelar" onClick={onOpenHelp}>
+        {/* Allt utom Nytt spel är ikonknappar (.iconbtn) – fem knappar och
+            rubriken ska rymmas på en rad även på engelska; se Header.css. */}
+        <button
+          className="iconbtn"
+          title={t.howToPlay}
+          aria-label={t.howToPlay}
+          onClick={onOpenHelp}
+        >
           <Icon name="help" />
         </button>
         <button
-          title="Ljud av/på"
-          aria-label="Ljud av/på"
+          className="iconbtn"
+          title={t.header.sound}
+          aria-label={t.header.sound}
           onClick={() => setOn(toggleSound())}
         >
           <Icon name={on ? "sound-on" : "sound-off"} />
         </button>
-        {/* aria-label: i liggande mobil döljs texten och knappen är bara pokalen. */}
-        <button aria-label="Topplista" onClick={onOpenHighscores}>
-          <Icon name="trophy" className="btnicon lead" />
-          <span className="btnlabel">Topplista</span>
+        <button
+          className="iconbtn"
+          title={t.language}
+          aria-label={t.language}
+          onClick={onOpenLanguage}
+        >
+          <Icon name="globe" />
         </button>
-        <button onClick={onNewGame}>Nytt spel</button>
+        <button
+          className="iconbtn"
+          title={t.highscores}
+          aria-label={t.highscores}
+          onClick={onOpenHighscores}
+        >
+          <Icon name="trophy" />
+        </button>
+        <button onClick={onNewGame}>{t.header.newGame}</button>
       </div>
     </header>
   );

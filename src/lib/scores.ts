@@ -1,4 +1,5 @@
 import type { GameMode, Lang, ScoreEntry } from "./types";
+import { FetchFailed } from "./errors";
 
 /* Global topplista via Supabase REST. Den publicerbara nyckeln är gjord för att
    ligga öppet i klienten; åtkomsten styrs av Row Level Security (läs + lägg till). */
@@ -23,9 +24,9 @@ async function fetchScores(params: string, relation = SUPA_TABLE): Promise<Score
       headers: SUPA_HEADERS,
     });
   } catch {
-    throw new Error("Kunde inte nå topplistan (nätverksfel).");
+    throw new FetchFailed("scores", null);
   }
-  if (!r.ok) throw new Error("Topplistan svarade med fel (" + r.status + ").");
+  if (!r.ok) throw new FetchFailed("scores", r.status);
   return (await r.json()) as ScoreEntry[];
 }
 
@@ -73,11 +74,11 @@ export async function loadScoreRank(score: number, lang: Lang): Promise<number> 
       headers: { ...SUPA_HEADERS, Prefer: "count=exact", Range: "0-0" },
     });
   } catch {
-    throw new Error("Kunde inte nå topplistan (nätverksfel).");
+    throw new FetchFailed("scores", null);
   }
   // 206 Partial Content är normalt när Range är satt.
   if (!r.ok && r.status !== 206) {
-    throw new Error("Topplistan svarade med fel (" + r.status + ").");
+    throw new FetchFailed("scores", r.status);
   }
   // Content-Range: "0-0/1234" (eller "*/0" när inget ligger över).
   const above = Number((r.headers.get("content-range") || "").split("/")[1]);
@@ -132,9 +133,9 @@ export async function submitScore(entry: NewScore): Promise<number | null> {
       }),
     });
   } catch {
-    throw new Error("Kunde inte spara poängen (nätverksfel).");
+    throw new FetchFailed("save", null);
   }
-  if (!r.ok) throw new Error("Poängen kunde inte sparas (" + r.status + ").");
+  if (!r.ok) throw new FetchFailed("save", r.status);
   try {
     const rows = (await r.json()) as { id?: number }[];
     const id = Array.isArray(rows) ? rows[0]?.id : undefined;

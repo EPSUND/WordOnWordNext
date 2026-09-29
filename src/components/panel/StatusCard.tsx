@@ -1,4 +1,5 @@
 import type { GameState } from "../../game/reducer";
+import { useI18n } from "../../i18n/I18n";
 import { TOTAL_BLOCKS } from "../../lib/engine/constants";
 import "./StatusCard.css";
 
@@ -11,13 +12,14 @@ interface Props {
  * på mobil en kompakt rad ovanför brädet (se .status i index.css).
  */
 export default function StatusCard({ state }: Props) {
+  const { t } = useI18n();
   const handLeft = state.startHand.filter((h) => h.r == null).length;
   const blocksLeft =
     state.phase === "over"
       ? 0
       : Math.max(0, handLeft + (TOTAL_BLOCKS - state.bagIndex) + (state.jokerUsed ? 0 : 1));
   const modeLabel =
-    state.mode === "daily" ? "Dagligt " + (state.dailyDate || "") : "Slumpmässigt";
+    state.mode === "daily" ? t.status.daily(state.dailyDate || "") : t.status.random;
   // Nästa-brickan visas här bara i mobilt stående läge (via .statusnext-media-
   // queryn); där flyttas den upp i statusraden ovanför dropzonen så att den inte
   // förväxlas med den aktiva brickan man släpper. På skrivbord/landskap ligger
@@ -26,31 +28,32 @@ export default function StatusCard({ state }: Props) {
 
   return (
     <div className="card status">
-      <h2>Poäng</h2>
+      <h2>{t.status.score}</h2>
       <div className="scorebig">{state.score}</div>
       <div className="stats">
         <div className="statrow">
-          <span>Antal ord</span>
+          <span>{t.status.numWords}</span>
           <b>{state.numWords}</b>
         </div>
         <div className="statrow">
-          <span>Brickor kvar</span>
+          <span>{t.status.tilesLeft}</span>
           <b>{blocksLeft}</b>
         </div>
         {/* Språk och läge väljs i startdialogen och behövs inte under spelets
-            gång – de döljs på mobil för att statusraden ska rymmas. */}
+            gång – de döljs på mobil för att statusraden ska rymmas. Språket är
+            spelets (ordlistan), inte gränssnittets. */}
         <div className="statrow secondary">
-          <span>Språk</span>
-          <b>{state.lang === "sv" ? "Svenska" : "Engelska"}</b>
+          <span>{t.status.language}</span>
+          <b>{t.gameLangs[state.lang]}</b>
         </div>
         <div className="statrow secondary">
-          <span>Läge</span>
+          <span>{t.status.mode}</span>
           <b>{modeLabel}</b>
         </div>
       </div>
       {showNext && (
         <div className="statusnext">
-          <span className="nextcap">Nästa</span>
+          <span className="nextcap">{t.status.next}</span>
           <div className="minitile">{state.nextLetter || "–"}</div>
         </div>
       )}
