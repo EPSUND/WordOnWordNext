@@ -5,3 +5,12 @@
   .jokergrid{grid-template-columns:repeat(5,1fr);gap:8px}
   .jokergrid button{padding:0;min-height:46px}
 }
+/* Liggande mobil: fem kolumner gav sex rader för svenskan, så dialogen blev
+   högre än skärmen och Å/Ä/Ö och Avbryt krävde scroll. Bredare dialog och tio
+   kolumner ger tre rader – knapparna blir ändå ~50px breda. Måste ligga efter
+   touch-regeln ovan (samma specificitet för .jokergrid). */
+@media (pointer:coarse) and (max-height:600px){
+  .dialog.jokerdialog{max-width:600px}
+  .jokergrid{grid-template-columns:repeat(10,1fr);gap:6px}
+  .jokergrid button{min-height:40px}
+}

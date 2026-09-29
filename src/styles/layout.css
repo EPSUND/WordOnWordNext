@@ -23,10 +23,15 @@
   .layout{gap:14px}
 }
 
-/* ---------- Låg skärm (landskap): tvåkolumners, allt inom en skärm ----------
+/* ---------- Låg skärm (landskap): tvåkolumners ----------
    Att stapla vore fel här – med korten över/under brädet blir brickorna
-   pyttesmå. I stället låter vi ordlistan ta det som blir över och scrolla
-   internt (se WordList.css), så att brädet ALLTID är synligt. */
+   pyttesmå. Brädet ska ALLTID vara synligt och ordlistan ta det som blir över
+   (se WordList.css). På en mobil i landskap räcker höjden ändå inte:
+   kontrollkortet är högt (särskilt under arrangeringen), så högerkolumnen blir
+   högre än skärmen och sidan går att scrolla ned till ordlistan. Det är ett
+   medvetet val – att sträcka .words till sin rad gav listan noll synliga rader.
+   Brädet ligger ändå helt synligt överst, så länge rubriken ryms på en rad (se
+   Header.css). */
 @media (max-height:600px){
   .layout{flex:1;min-height:0;gap:10px 18px;grid-template-rows:auto auto minmax(0,1fr)}
   .words{min-height:0;display:flex;flex-direction:column;overflow:hidden}

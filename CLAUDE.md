@@ -215,6 +215,10 @@ src/test/dictFixture.ts  Laddar de riktiga ordlistorna in i dict.ts:s cache i te
   Chrome. Manifest + ikoner finns, så "Lägg till på hemskärmen" fungerar manuellt.
 - På mobil döljs språk och läge i statusraden (de väljs ändå i startdialogen). Ordlistan är inte
   hopfällbar utan bara höjdbegränsad och scrollbar.
+- Mobil i landskap: högerkolumnen (främst kontrollkortet) är högre än skärmen, så sidan scrollar
+  ned till ordlistan. Brädet syns helt överst så länge rubriken ryms på en rad – därför blir
+  Topplista bara en ikon där (`Header.css`). Att få allt på en skärm kräver ett kompaktare
+  kontrollkort i landskap.
 
 ## 12. Tester
 

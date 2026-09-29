@@ -13,7 +13,7 @@ interface Props {
 
 export default function JokerDialog({ last, lang, onChoose, onCancel }: Props) {
   return (
-    <Overlay>
+    <Overlay className="jokerdialog">
       <h2>{last ? "Sista brickan – joker!" : "Joker – välj bokstav"}</h2>
       <p>
         {last

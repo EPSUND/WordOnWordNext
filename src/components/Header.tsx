@@ -27,9 +27,10 @@ export default function Header({ onOpenHighscores, onOpenHelp, onNewGame }: Prop
         >
           <Icon name={on ? "sound-on" : "sound-off"} />
         </button>
-        <button onClick={onOpenHighscores}>
+        {/* aria-label: i liggande mobil döljs texten och knappen är bara pokalen. */}
+        <button aria-label="Topplista" onClick={onOpenHighscores}>
           <Icon name="trophy" className="btnicon lead" />
-          Topplista
+          <span className="btnlabel">Topplista</span>
         </button>
         <button onClick={onNewGame}>Nytt spel</button>
       </div>

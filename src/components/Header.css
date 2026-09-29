@@ -24,3 +24,16 @@ h1 .pa{color:var(--ring);font-style:italic;letter-spacing:.02em}
 @media (pointer:coarse){
   .header-btns button{min-height:40px}
 }
+/* Liggande mobil: rubrik och knappar MÅSTE rymmas på en rad. Headern är inte
+   bredare än brädet + panelen (--content-w, ~490–550px här), så de fyra
+   touchknapparna bröts ned på en egen rad. Det åt ~40px av höjdbudgeten
+   (--chrome i base.css) och brädets nedersta rad hamnade utanför skärmen.
+   Topplista blir därför bara pokalen (aria-label på knappen) och knapparna
+   smalare. Bara touch: på ett lågt skrivbordsfönster är brickorna större, så
+   --content-w är bredare och allt får plats med text. */
+@media (max-height:600px) and (pointer:coarse){
+  header{flex-wrap:nowrap}
+  .header-btns button{padding-left:10px;padding-right:10px}
+  .header-btns .btnlabel{display:none}
+  .header-btns .btnicon.lead{margin-right:0}
+}
