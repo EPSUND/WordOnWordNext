@@ -24,6 +24,14 @@ export default function Header({ onOpenHighscores, onOpenHelp, onOpenLanguage, o
             rubriken ska rymmas på en rad även på engelska; se Header.css. */}
         <button
           className="iconbtn"
+          title={t.language}
+          aria-label={t.language}
+          onClick={onOpenLanguage}
+        >
+          <Icon name="globe" />
+        </button>
+        <button
+          className="iconbtn"
           title={t.howToPlay}
           aria-label={t.howToPlay}
           onClick={onOpenHelp}
@@ -37,14 +45,6 @@ export default function Header({ onOpenHighscores, onOpenHelp, onOpenLanguage, o
           onClick={() => setOn(toggleSound())}
         >
           <Icon name={on ? "sound-on" : "sound-off"} />
-        </button>
-        <button
-          className="iconbtn"
-          title={t.language}
-          aria-label={t.language}
-          onClick={onOpenLanguage}
-        >
-          <Icon name="globe" />
         </button>
         <button
           className="iconbtn"
